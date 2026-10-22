@@ -20,6 +20,10 @@ muser
 >
 > The Muser generates candidates, selects the best, and exports production-ready audio.
 
+> **NoDAW Labs fork:** this fork adds **The Muser Studio**, a hardware-style web studio (stem splitting,
+> per-stem mixer, pads, keys, undo/redo) on top of the original agent. See **[STUDIO_README.md](STUDIO_README.md)**
+> for Windows setup (`setup_windows.bat` → `start_studio.bat`).
+
 ## What It Does
 
 ```

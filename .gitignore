@@ -102,3 +102,8 @@ huggingface-space/
 # Claude Code
 .claude/
 CLAUDE.md
+
+# Studio front end (NoDAW Labs)
+studio_data/
+studio/web/node_modules/
+studio/web/dist/
