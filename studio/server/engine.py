@@ -141,33 +141,51 @@ def generate(req: GenerateRequest, job: Job | None = None) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def split(track_id: str, mode: str = "4stem", job: Job | None = None) -> dict[str, Any]:
+def split(
+    track_id: str, mode: str = "4stem", job: Job | None = None, engine: str = "auto", model: str | None = None
+) -> dict[str, Any]:
+    """Split a track into stems.
+
+    Order: the demo synth's exact sources, then the engine registry's best
+    separator (Audio Separator / Demucs), then the band-split fallback. Demo
+    mode keeps the band-split fallback unless an engine is picked explicitly.
+    """
     t = tracks.get(track_id)
     if not t:
         raise KeyError(f"Unknown track {track_id}")
     caps = capabilities.detect()
-    out_dir = Path(t.path).parent / f"stems_{mode}"
+    out_dir = Path(t.path).parent / f"stems_{mode}{'_' + engine if engine != 'auto' else ''}"
 
-    if t.hidden_stems and mode == "4stem":
+    def progress(msg: str) -> None:
+        if job:
+            job.message = msg
+
+    if t.hidden_stems and mode == "4stem" and engine == "auto":
         stems = t.hidden_stems
         method = "demo-synth"
         note = "Stems are the demo synthesizer's own source tracks (exact, not separated)."
-    elif caps.ok("demucs") and not caps.demo_forced:
-        if job:
-            job.message = "Running Demucs (htdemucs). On CPU this takes ~1x-3x track length..."
-        from src.voice.demucs_wrapper import separate_stems
+    elif engine != "auto" or not caps.demo_forced:
+        from .engines import separation, selector
+        from .engines.errors import FriendlyError
 
-        stems = separate_stems(t.path, output_dir=str(out_dir), two_stems=(mode == "2stem"))
-        if not stems:
-            raise RuntimeError("Demucs produced no stems")
-        method = f"demucs-{mode}"
-        note = "Separated with Demucs htdemucs."
+        chosen = engine
+        if engine == "auto":
+            try:
+                chosen = selector.select("separate").engine
+            except FriendlyError:
+                chosen = "band-split"
+        if job:
+            job.message = f"Splitting with {chosen} (on CPU this can take about the length of the song)..."
+        res = separation.separate(t.path, out_dir, mode=mode, engine=chosen, model=model, progress=progress)
+        stems = res["stems"]
+        method = res["engine"] if res["engine"] == "band-split" else f"{res['engine']}-{mode}"
+        note = res["note"]
     else:
         if job:
-            job.message = "Demucs unavailable: using 4-band crossover fallback..."
+            job.message = "Demo mode: using 4-band crossover fallback..."
         stems = demo_synth.band_split(t.path, out_dir)
         method = "band-split"
-        note = "Demucs not installed: frequency-band split (crossover), not true source separation."
+        note = "Demo mode: frequency-band split (crossover), not true source separation."
 
     t.stems = [
         Stem(id=f"{t.id}:{i}", name=name, path=str(Path(p).resolve()), color=color_for(name, i))

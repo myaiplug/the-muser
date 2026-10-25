@@ -150,6 +150,7 @@ def job(jid: str) -> dict:
         "message": j.message,
         "result": j.result,
         "error": j.error,
+        "detail": getattr(j, "detail", ""),
     }
 
 
@@ -178,6 +179,11 @@ def files(root: str, rel: str) -> FileResponse:
 
 if (WEB_DIST / "assets").exists():
     app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
+
+
+from .routes_v2 import router as _v2_router  # noqa: E402
+
+app.include_router(_v2_router)
 
 
 @app.get("/{path:path}", include_in_schema=False)

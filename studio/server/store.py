@@ -73,6 +73,7 @@ class Track:
     notes: str = ""
     hidden_stems: dict[str, str] = field(default_factory=dict)  # demo synth pre-renders
     parent_id: str = ""
+    meta: dict[str, Any] = field(default_factory=dict)  # loudness reports, preset ids, engine used
 
     def to_public(self) -> dict[str, Any]:
         d = asdict(self)
@@ -196,8 +197,23 @@ class Job:
     message: str = ""
     result: Any = None
     error: str = ""
+    detail: str = ""  # raw technical error, shown under "details" in the UI
     created: float = field(default_factory=time.time)
     finished: float = 0.0
+
+
+def jsonable(v: Any) -> Any:
+    """Make numpy scalars and tuples safe for the track's JSON metadata."""
+    if isinstance(v, dict):
+        return {str(k): jsonable(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [jsonable(x) for x in v]
+    if hasattr(v, 'item') and type(v).__module__ == 'numpy':
+        return v.item()
+    if isinstance(v, float) and (v != v or v in (float('inf'), float('-inf'))):
+        return None
+    return v
+
 
 
 class JobRunner:
@@ -212,11 +228,14 @@ class JobRunner:
         def run() -> None:
             job.status = "running"
             try:
-                job.result = fn(job)
+                job.result = jsonable(fn(job))
                 job.status = "done"
             except Exception as e:
+                from .engines.errors import friendly_message
+
                 job.status = "error"
-                job.error = f"{type(e).__name__}: {e}"
+                job.error = friendly_message(e)
+                job.detail = f"{type(e).__name__}: {e}"
                 traceback.print_exc()
             finally:
                 job.finished = time.time()
