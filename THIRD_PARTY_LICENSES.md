@@ -17,7 +17,15 @@ The Muser Contributors.
 | NotaGen | MIT | Symbolic notation | YES |
 | Applio / RVC | MIT | Voice conversion | YES |
 | Demucs | MIT | Stem separation | YES |
-| Seed-VC | MIT | Zero-shot voice conversion | YES |
+| Seed-VC | **GPL-3.0** | Zero-shot voice conversion | YES (see note) |
+
+**Seed-VC is GPL-3.0, not MIT** (see the upstream
+[LICENSE](https://github.com/Plachtaa/seed-vc/blob/main/LICENSE)). It is an
+optional model that users clone separately into `models/seed-vc`. The GPL covers
+Seed-VC's code, not the audio it produces. Note that
+`src/voice/seedvc_wrapper.py` imports Seed-VC in-process, so anyone
+*redistributing* The Muser together with Seed-VC must meet GPL-3.0 terms for
+the combined work. Voice-cloning consent rules still apply to the output.
 
 ## Vocoders (Critical for DiffSinger)
 
