@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import gc
 import logging
+import os
 import sys
 from typing import Any
 
@@ -383,8 +384,11 @@ class ModelManager:
 
         torch = _import_torch(require_cuda=False)
 
+        from src.utils.vram_profile import acestep_profile, cuda_total_vram_gb
+
+        profile = acestep_profile(cuda_total_vram_gb())
         if torch.cuda.is_available():
-            required_gb = VRAM_BUDGET.get("acestep_v15", 22.0)
+            required_gb = min(VRAM_BUDGET.get("acestep_v15", 22.0), profile.budget_gb)
             self._check_vram(required_gb)
 
         v15_path = str(ACESTEP_V15_DIR)
@@ -405,15 +409,28 @@ class ModelManager:
             dit_handler = AceStepHandler()
             llm_handler = LLMHandler()
 
-            # Initialize the DiT model
-            status, success = dit_handler.initialize_service(
-                project_root=str(ACESTEP_V15_DIR),
-                config_path=ACESTEP_V15_DIT_MODEL,
-                device="auto",
-                use_flash_attention=False,
-                compile_model=False,
-                offload_to_cpu=not torch.cuda.is_available(),
-            )
+            # Initialize the DiT model with settings that fit this GPU. Older
+            # ACE-Step checkouts lack some kwargs, so only pass what exists.
+            import inspect
+
+            kwargs = {
+                "project_root": str(ACESTEP_V15_DIR),
+                "config_path": os.environ.get("MUSER_ACESTEP_DIT_MODEL") or profile.dit_model
+                if profile.tier != "20gb+"
+                else ACESTEP_V15_DIT_MODEL,
+                "device": "auto",
+                # FlashAttention 2 needs an Ampere (RTX 30) or newer GPU.
+                "use_flash_attention": False,
+                "compile_model": False,
+                "offload_to_cpu": profile.offload_to_cpu or not torch.cuda.is_available(),
+                "offload_dit_to_cpu": profile.offload_dit_to_cpu,
+                "quantization": profile.quantization,
+            }
+            accepted = inspect.signature(dit_handler.initialize_service).parameters
+            if not any(p.kind == p.VAR_KEYWORD for p in accepted.values()):
+                kwargs = {k: v for k, v in kwargs.items() if k in accepted}
+            logger.info("ACE-Step v1.5 memory profile: %s", profile.note)
+            status, success = dit_handler.initialize_service(**kwargs)
 
             if not success:
                 raise RuntimeError(f"ACE-Step v1.5 init failed: {status}")

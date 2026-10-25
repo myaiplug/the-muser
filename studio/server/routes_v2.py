@@ -78,8 +78,17 @@ def list_engines(commercial_only: bool = True) -> dict:
     out = []
     for spec in registry.ENGINES:
         h = registry.health(spec)
-        ok, why = selector.fits(spec, hw)
-        out.append({**spec.public(), "health": h, "fits": ok, "fit_reason": why})
+        v = selector.verdict(spec, hw)
+        ok = v["status"] in ("cpu", "fits", "fits-reduced", "tight")
+        out.append(
+            {
+                **spec.public(),
+                "health": h,
+                "fits": ok,
+                "fit_reason": v["reason"],
+                "fit": v,
+            }
+        )
     picks = {}
     for task in registry.TASKS:
         try:

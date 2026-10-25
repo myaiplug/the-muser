@@ -436,3 +436,91 @@ def test_cli_extras_map_to_registry():
     for names in cli.EXTRAS.values():
         assert set(names) <= keys
     assert set(cli.core_keys()) == {s.key for s in registry.ENGINES if s.tier == "core"}
+
+
+# ----------------------------------------------------------------- 8 GB card (RTX 2080 Super)
+
+
+def _rtx2080s():
+    from studio.server.engines.hardware import Hardware
+
+    return Hardware(
+        os="Windows",
+        cpu_count=16,
+        ram_gb=32,
+        gpu="NVIDIA GeForce RTX 2080 SUPER",
+        vram_gb=8.0,
+        cuda=True,
+        source="test",
+        compute_cap="7.5",
+    )
+
+
+def test_8gb_card_verdicts():
+    from studio.server.engines import registry, selector
+
+    hw = _rtx2080s()
+    assert not hw.bf16 and not hw.flash_attn
+    v = {s.key: selector.verdict(s, hw) for s in registry.ENGINES}
+    for key in ("acestep", "stable-audio-open", "applio", "seed-vc", "resemble-enhance"):
+        assert v[key]["recommended"], (key, v[key])
+    assert v["acestep"]["status"] == "fits-reduced"
+    assert "0.6B" in v["acestep"]["profile"]["how"]
+    for key in ("diffrhythm", "audiosr"):
+        assert v[key]["status"] == "tight" and not v[key]["recommended"]
+    for key in ("yue", "songgeneration"):
+        assert v[key]["status"] == "too-big"
+        assert v[key]["label"] == "Not recommended for your card"
+    assert "FlashAttention" in v["yue"]["caveat"]
+
+
+def test_every_heavy_engine_lists_real_vram():
+    from studio.server.engines import registry
+
+    for s in registry.ENGINES:
+        if s.tier == "heavy":
+            assert s.vram_profiles, s.key
+            assert s.vram_full_gb >= s.min_vram_gb > 0
+
+
+def test_auto_selector_never_defaults_to_tight_or_too_big():
+    from studio.server.engines import registry, selector
+    from studio.server.engines.errors import FriendlyError
+
+    hw = _rtx2080s()
+
+    def all_installed(spec):
+        return {"installed": True, "healthy": True, "detail": ""}
+
+    c = selector.select("generate", hw, commercial_only=False, health_fn=all_installed)
+    assert c.engine not in ("yue", "songgeneration", "diffrhythm")
+    assert selector.verdict(registry.get(c.engine), hw)["recommended"]
+    with pytest.raises(FriendlyError, match="not recommended for your card"):
+        selector.select("generate", hw, prefer="yue", health_fn=all_installed)
+    # Tight engines still work when picked by hand.
+    forced = selector.select("generate", hw, prefer="diffrhythm", health_fn=all_installed)
+    assert any("Tight fit" in r for r in forced.reasons)
+
+
+def test_recommendations_order_for_8gb():
+    from studio.server.engines import selector
+
+    rec = selector.recommendations(_rtx2080s())
+    statuses = [r["status"] for r in rec]
+    first_bad = next(i for i, s in enumerate(statuses) if s in ("tight", "too-big"))
+    assert all(s in ("fits", "fits-reduced", "cpu") for s in statuses[:first_bad])
+    assert all(s in ("tight", "too-big") for s in statuses[first_bad:])
+
+
+def test_acestep_upstream_profile(monkeypatch):
+    from src.utils.vram_profile import acestep_profile
+
+    for k in ("MUSER_ACESTEP_DIT_MODEL", "MUSER_ACESTEP_LM_MODEL", "MUSER_ACESTEP_QUANT"):
+        monkeypatch.delenv(k, raising=False)
+    p = acestep_profile(7.8)
+    assert p.dit_model == "acestep-v15-turbo" and p.lm_model == "acestep-5Hz-lm-0.6B"
+    assert p.offload_to_cpu and p.quantization == "int8_weight_only" and p.budget_gb < 8
+    big = acestep_profile(24)
+    assert big.dit_model == "acestep-v15-sft" and big.quantization is None
+    monkeypatch.setenv("MUSER_ACESTEP_QUANT", "none")
+    assert acestep_profile(7.8).quantization is None

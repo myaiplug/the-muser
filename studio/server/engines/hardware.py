@@ -22,6 +22,31 @@ class Hardware:
     cuda: bool = False
     source: str = "none"  # nvidia-smi | torch | env | none
     notes: list[str] = field(default_factory=list)
+    compute_cap: str = ""  # e.g. "7.5" for Turing (RTX 20), "8.6" for Ampere (RTX 30)
+
+    @property
+    def cc(self) -> float:
+        try:
+            return float(self.compute_cap)
+        except ValueError:
+            return 0.0
+
+    @property
+    def bf16(self) -> bool:
+        """Native bfloat16 needs Ampere (8.0) or newer. Turing falls back to fp16."""
+        return self.cc >= 8.0
+
+    @property
+    def flash_attn(self) -> bool:
+        """FlashAttention 2 also needs Ampere or newer."""
+        return self.cc >= 8.0
+
+    @property
+    def usable_vram_gb(self) -> float:
+        """VRAM left for models after the desktop and display take their share."""
+        if self.vram_gb <= 0:
+            return 0.0
+        return round(max(self.vram_gb - 0.5, 0.0), 1)
 
     @property
     def has_gpu(self) -> bool:
@@ -42,6 +67,9 @@ class Hardware:
         d = asdict(self)
         d["tier"] = self.tier()
         d["has_gpu"] = self.has_gpu
+        d["bf16"] = self.bf16
+        d["flash_attn"] = self.flash_attn
+        d["usable_vram_gb"] = self.usable_vram_gb
         return d
 
 
@@ -92,6 +120,7 @@ def detect(force: bool = False) -> Hardware:
         hw.gpu = "forced via MUSER_FORCE_VRAM_GB" if hw.vram_gb else ""
         hw.cuda = hw.vram_gb > 0
         hw.source = "env"
+        hw.compute_cap = os.environ.get("MUSER_FORCE_COMPUTE_CAP", "")
     elif shutil.which("nvidia-smi"):
         try:
             out = subprocess.run(
@@ -110,6 +139,14 @@ def detect(force: bool = False) -> Hardware:
                     True,
                     "nvidia-smi",
                 )
+                cap = subprocess.run(
+                    ["nvidia-smi", "--query-gpu=compute_cap", "--format=csv,noheader"],
+                    capture_output=True,
+                    text=True,
+                    timeout=8,
+                ).stdout.strip()
+                if cap and cap[0].isdigit():
+                    hw.compute_cap = cap.splitlines()[0].strip()
         except Exception as e:  # pragma: no cover
             hw.notes.append(f"nvidia-smi failed: {e}")
     if hw.source == "none":
@@ -127,8 +164,17 @@ def detect(force: bool = False) -> Hardware:
                         True,
                         "torch",
                     )
+                    hw.compute_cap = f"{p.major}.{p.minor}"
         except Exception:
             pass
+    if hw.has_gpu and hw.compute_cap and not hw.bf16:
+        hw.notes.append(
+            "RTX 20 series or older: models run in fp16 (no bf16 or FlashAttention 2 on this GPU)."
+        )
+    if 0 < hw.vram_gb < 10:
+        hw.notes.append(
+            f"{hw.vram_gb:g} GB card: the Studio picks low-memory settings and hides models that won't fit."
+        )
     if not hw.has_gpu:
         hw.notes.append(
             "No NVIDIA GPU found: heavy AI models are skipped and CPU-friendly engines are used."

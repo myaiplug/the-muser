@@ -161,6 +161,11 @@ def diffrhythm(p: GenParams, out: Path, progress: Progress | None, vram_gb: floa
 
 
 def yue(p: GenParams, out: Path, progress: Progress | None, vram_gb: float) -> str:
+    if 0 < vram_gb < 16:
+        raise FriendlyError(
+            f"YuE is not recommended for your {vram_gb:g} GB card: the official code needs 24 GB.",
+            "Use ACE-Step 1.5 for full songs with vocals on 8 to 12 GB cards.",
+        )
     repo = _repo("yue")
     work = out.parent / "yue_work"
     work.mkdir(parents=True, exist_ok=True)
@@ -217,6 +222,9 @@ def songgeneration(p: GenParams, out: Path, progress: Progress | None, vram_gb: 
             str(repo / "ckpt" / "songgeneration_base"),
             str(work / "in.jsonl"),
             str(work / "out"),
+            # Low memory mode (about 10 GB) and plain attention so RTX 20 cards work.
+            *(["--low_mem"] if vram_gb < 20 else []),
+            "--not_use_flash_attn",
         ],
         repo,
         progress,

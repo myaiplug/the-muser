@@ -54,6 +54,19 @@ class Install:
 
 
 @dataclass
+class VramProfile:
+    """One real way to run a GPU model, with its measured or documented VRAM need."""
+
+    id: str
+    label: str
+    vram_gb: float
+    how: str  # the actual flags or settings
+    quality: str = "full"  # full | reduced
+    wired: bool = True  # False = documented upstream but not applied by the Studio adapter
+    source: str = ""
+
+
+@dataclass
 class EngineSpec:
     key: str
     name: str
@@ -76,10 +89,19 @@ class EngineSpec:
     paths: list[str] = field(default_factory=list)
     gpl_note: str = ""
     archived: bool = False
+    vram_profiles: list[VramProfile] = field(default_factory=list)
+    vram_caveat: str = ""  # known out-of-memory reports, Turing limits, etc.
+    needs_flash_attn: bool = False  # FlashAttention 2 needs an RTX 30 series or newer
+
+    @property
+    def vram_full_gb(self) -> float:
+        """VRAM for full quality (the biggest profile)."""
+        return max((p.vram_gb for p in self.vram_profiles), default=self.min_vram_gb)
 
     def public(self) -> dict[str, Any]:
         d = asdict(self)
         d["untested_here"] = self.verified != "working"
+        d["vram_full_gb"] = self.vram_full_gb
         return d
 
 
@@ -557,6 +579,181 @@ ENGINES: list[EngineSpec] = [
 ]
 
 BY_KEY: dict[str, EngineSpec] = {e.key: e for e in ENGINES}
+
+
+# Real VRAM needs, largest first. Sources: each project's README or issue tracker
+# (checked Oct 2026). "wired" profiles are applied automatically by the Studio.
+_P = VramProfile
+VRAM_PROFILES: dict[str, list[VramProfile]] = {
+    "acestep": [
+        _P(
+            "full",
+            "Full quality",
+            20,
+            "sft DiT + 1.7B LM, bf16, no offload",
+            wired=True,
+            source="ACE-Step 1.5 GPU_COMPATIBILITY tier 6",
+        ),
+        _P(
+            "12gb",
+            "12-20 GB",
+            12,
+            "2B turbo DiT + 1.7B LM, INT8, no offload",
+            "reduced",
+            source="ACE-Step 1.5 gpu_config tier5",
+        ),
+        _P(
+            "8gb",
+            "8 GB card",
+            6,
+            "2B turbo DiT + 0.6B LM (pt backend), CPU offload, INT8 weights, fp16",
+            "reduced",
+            source="ACE-Step 1.5 gpu_config tier3/tier4",
+        ),
+        _P(
+            "4gb",
+            "4-6 GB card",
+            4,
+            "2B turbo DiT only (no LM), full CPU offload, INT8",
+            "reduced",
+            wired=False,
+            source="ACE-Step 1.5 README: DiT-only mode",
+        ),
+    ],
+    "diffrhythm": [
+        _P("full", "Full quality", 12, "default decode", source="DiffRhythm README"),
+        _P(
+            "chunked",
+            "8 GB card",
+            8,
+            "--chunked VAE decode",
+            "reduced",
+            source="DiffRhythm README: min 8 GB with --chunked",
+        ),
+    ],
+    "yue": [
+        _P(
+            "full",
+            "Official",
+            24,
+            "2 sessions; 80 GB+ for 4+ sessions / full songs",
+            source="YuE README hardware section",
+        ),
+        _P(
+            "exl2",
+            "8 GB (community)",
+            8,
+            "YuE-exllamav2 4-bit stage 1 + Q4 cache, about 60 s per run",
+            "reduced",
+            wired=False,
+            source="sgsdxzy/YuE-exllamav2",
+        ),
+    ],
+    "songgeneration": [
+        _P(
+            "full",
+            "With prompt audio",
+            16,
+            "--low_mem with a reference prompt",
+            source="SongGeneration README",
+        ),
+        _P(
+            "lowmem",
+            "Low memory",
+            10,
+            "--low_mem --not_use_flash_attn, no prompt audio",
+            "reduced",
+            source="SongGeneration README",
+        ),
+    ],
+    "stable-audio-open": [
+        _P(
+            "fp16",
+            "fp16",
+            6,
+            "fp16 weights, clips up to 47 s, VAE decode peak near 6 GB",
+            source="diffusers StableAudioPipeline",
+        ),
+    ],
+    "musicgen": [
+        _P("large", "Large", 16, "musicgen-large", source="audiocraft README"),
+        _P(
+            "medium",
+            "Medium",
+            8,
+            "musicgen-medium",
+            "reduced",
+            wired=False,
+            source="audiocraft README",
+        ),
+        _P(
+            "small",
+            "Small",
+            4,
+            "musicgen-small (auto on cards under 12 GB)",
+            "reduced",
+            source="audiocraft README",
+        ),
+    ],
+    "audioldm2": [
+        _P("fp16", "fp16", 6, "torch_dtype=float16", source="diffusers AudioLDM2Pipeline"),
+    ],
+    "applio": [
+        _P(
+            "infer",
+            "Voice conversion",
+            4,
+            "RVC inference (training wants 6 GB+)",
+            source="Applio docs",
+        ),
+    ],
+    "seed-vc": [
+        _P(
+            "sing",
+            "Singing (44 kHz)",
+            6,
+            "--fp16 True, f0-conditioned model",
+            source="Seed-VC README",
+        ),
+        _P("speech", "Speech", 4, "--fp16 True, 22 kHz model", "reduced", source="Seed-VC README"),
+    ],
+    "audiosr": [
+        _P("full", "Full", 8, "fp32 48 kHz upscaler", source="AudioSR issues"),
+        _P("fp16", "fp16", 6, "fp16, short chunks", "reduced", source="AudioSR issues"),
+    ],
+    "resemble-enhance": [
+        _P("full", "Full", 4, "enhancer + denoiser", source="resemble-enhance README"),
+    ],
+    "demucs": [
+        _P(
+            "gpu", "GPU", 4, "htdemucs, --segment 7 on small cards (or CPU)", source="demucs README"
+        ),
+    ],
+    "audio-separator": [
+        _P(
+            "gpu",
+            "GPU",
+            3,
+            "ONNX / MDX / Roformer models (or CPU)",
+            source="audio-separator README",
+        ),
+    ],
+}
+VRAM_CAVEATS: dict[str, str] = {
+    "audiosr": "Users report out-of-memory on 8 GB cards (RTX 2060 Super) even in fp16.",
+    "yue": "Official code needs 24 GB+ and FlashAttention 2 (RTX 30 or newer). The 8 GB route is a community 4-bit fork the Studio does not install.",
+    "songgeneration": "Needs 10 GB even in low memory mode.",
+    "diffrhythm": "8 GB is the stated minimum: close other GPU apps (browser, games) first.",
+    "stable-audio-open": "Keep clips short on 8 GB cards; long renders can spike during decoding.",
+}
+for _spec in ENGINES:
+    if _spec.key in VRAM_PROFILES:
+        _spec.vram_profiles = VRAM_PROFILES[_spec.key]
+        if _spec.tier == "heavy":
+            # Lowest need among the profiles the Studio actually applies.
+            _spec.min_vram_gb = min(p.vram_gb for p in _spec.vram_profiles if p.wired)
+    _spec.vram_caveat = VRAM_CAVEATS.get(_spec.key, "")
+    _spec.needs_flash_attn = _spec.key == "yue"
 
 
 def get(key: str) -> EngineSpec:

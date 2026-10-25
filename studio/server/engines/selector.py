@@ -24,14 +24,88 @@ class Choice:
         return self.__dict__.copy()
 
 
+def verdict(spec: registry.EngineSpec, hw: hardware.Hardware) -> dict[str, Any]:
+    """How well this engine fits this machine.
+
+    status: cpu | fits | fits-reduced | tight | too-big | no-gpu
+    ``recommended`` is True only for cpu / fits / fits-reduced. Tight engines can be
+    installed and picked by hand but are never the automatic default.
+    """
+    profiles = spec.vram_profiles
+    caveat = spec.vram_caveat
+    if spec.min_vram_gb <= 0 and not profiles:
+        return _v("cpu", "Runs on CPU", "runs on CPU", None, True)
+    if spec.min_vram_gb <= 0 and spec.cpu_ok and not hw.has_gpu:
+        return _v("cpu", "Runs on CPU", "runs on CPU (faster with a GPU)", None, True)
+    if not hw.has_gpu:
+        if spec.cpu_ok:
+            # Usable, but a GPU model on CPU is too slow to recommend.
+            return _v("cpu", "CPU (slow)", "runs on CPU (slow without a GPU)", None, False)
+        return _v("no-gpu", "Needs NVIDIA GPU", "needs an NVIDIA GPU", None, False)
+    usable = hw.usable_vram_gb
+    wired = [p for p in profiles if p.wired] or profiles
+    if not wired:
+        if spec.min_vram_gb <= usable:
+            return _v("fits", "Fits", f"fits your {hw.vram_gb:g} GB GPU", None, True)
+        return _v("too-big", "Won't fit", f"needs {spec.min_vram_gb:g} GB", None, False)
+    best = next((p for p in sorted(wired, key=lambda p: -p.vram_gb) if p.vram_gb <= usable), None)
+    if spec.needs_flash_attn and not hw.flash_attn and hw.compute_cap:
+        caveat = (caveat + " " if caveat else "") + "This GPU has no FlashAttention 2."
+    if best is None:
+        smallest = min(wired, key=lambda p: p.vram_gb)
+        if smallest.vram_gb <= hw.vram_gb + 0.05:
+            reason = f"tight: needs about {smallest.vram_gb:g} GB ({smallest.how}) on a {hw.vram_gb:g} GB card"
+            return _v("tight", "Tight fit", reason, smallest, False, caveat)
+        unwired = [p for p in profiles if not p.wired and p.vram_gb <= hw.vram_gb + 0.05]
+        reason = f"needs {smallest.vram_gb:g} GB of GPU memory (you have {hw.vram_gb:g} GB)"
+        if unwired:
+            reason += f"; a community {unwired[0].vram_gb:g} GB route exists but the Studio does not set it up"
+        if spec.cpu_ok:
+            return _v("cpu", "CPU (slow)", reason + ", runs on CPU instead", None, False, caveat)
+        return _v("too-big", "Not recommended for your card", reason, smallest, False, caveat)
+    if spec.key in TIGHT_DESPITE_SPEC and hw.vram_gb < TIGHT_DESPITE_SPEC[spec.key]:
+        reason = f"tight: {caveat}"
+        return _v("tight", "Tight fit", reason, best, False, caveat)
+    if best.quality == "full":
+        return _v(
+            "fits", "Fits", f"fits your {hw.vram_gb:g} GB GPU at full quality", best, True, caveat
+        )
+    return _v(
+        "fits-reduced",
+        f"Fits ({best.label})",
+        f"fits your {hw.vram_gb:g} GB GPU with {best.how}",
+        best,
+        True,
+        caveat,
+    )
+
+
+# Engines whose small profile is documented but users report out-of-memory below this.
+TIGHT_DESPITE_SPEC = {"audiosr": 10.0}
+
+
+def _v(status, label, reason, profile, recommended, caveat=""):
+    return {
+        "status": status,
+        "label": label,
+        "reason": reason,
+        "profile": None
+        if profile is None
+        else {
+            "id": profile.id,
+            "label": profile.label,
+            "vram_gb": profile.vram_gb,
+            "how": profile.how,
+        },
+        "recommended": recommended,
+        "caveat": caveat,
+    }
+
+
 def fits(spec: registry.EngineSpec, hw: hardware.Hardware) -> tuple[bool, str]:
-    if spec.min_vram_gb <= 0:
-        return True, "runs on CPU"
-    if hw.vram_gb >= spec.min_vram_gb:
-        return True, f"fits your {hw.vram_gb:g} GB GPU"
-    if spec.cpu_ok:
-        return True, "runs on CPU (slow without a GPU)"
-    return False, f"needs {spec.min_vram_gb:g} GB of GPU memory (you have {hw.vram_gb:g} GB)"
+    """Usable at all on this machine (tight counts, with a penalty in ``score``)."""
+    v = verdict(spec, hw)
+    return v["status"] in ("cpu", "fits", "fits-reduced", "tight"), v["reason"]
 
 
 def allowed(
@@ -53,6 +127,9 @@ def score(spec: registry.EngineSpec, task: str, hw: hardware.Hardware) -> float:
         s += 3  # prefer engines proven on this codebase when quality is close
     if spec.min_vram_gb > 0 and not hw.has_gpu:
         s -= 25  # CPU fallback of a GPU model is painfully slow
+    v = verdict(spec, hw)
+    if v["status"] == "tight":
+        s -= 30  # never the automatic default: only when picked by hand
     return s
 
 
@@ -69,7 +146,8 @@ def candidates(
     for spec in registry.ENGINES:
         if task not in spec.tasks:
             continue
-        ok, why = fits(spec, hw)
+        v = verdict(spec, hw)
+        ok = v["status"] in ("cpu", "fits", "fits-reduced", "tight")
         h = health_fn(spec)
         out.append(
             {
@@ -77,7 +155,9 @@ def candidates(
                 "name": spec.name,
                 "score": score(spec, task, hw),
                 "fits": ok,
-                "fit_reason": why,
+                "fit_reason": v["reason"],
+                "fit_status": v["status"],
+                "recommended": v["recommended"],
                 "installed": h["installed"],
                 "healthy": h["healthy"],
                 "detail": h["detail"],
@@ -103,7 +183,11 @@ def select(
         raise FriendlyError(f"Unknown job type '{task}'.")
     hw = hw or hardware.detect()
     cands = candidates(task, hw, commercial_only, allow_conditional, health_fn)
-    usable = [c for c in cands if c["fits"] and c["healthy"] and c["allowed"]]
+    usable = [
+        c
+        for c in cands
+        if c["fits"] and c["healthy"] and c["allowed"] and c["fit_status"] != "tight"
+    ]
     if prefer and prefer != "auto":
         forced = next((c for c in cands if c["key"] == prefer), None)
         if forced is None:
@@ -113,7 +197,9 @@ def select(
                 f"{forced['name']} is not installed yet.", "Open System and press Install."
             )
         if not forced["fits"]:
-            raise FriendlyError(f"{forced['name']} {forced['fit_reason']}.")
+            raise FriendlyError(
+                f"{forced['name']} is not recommended for your card: {forced['fit_reason']}."
+            )
         usable = [forced] + [c for c in usable if c is not forced]
     if not usable:
         raise FriendlyError(
@@ -133,12 +219,14 @@ def select(
             "no": "Non-commercial licence: personal use only",
         }[spec.commercial],
     ]
+    if best["fit_status"] == "tight":
+        reasons.append("Tight fit on your card: close other GPU apps first")
     if spec.verified != "working":
         reasons.append("Adapter untested here: report issues if it fails")
     upgrades = [
         {"key": c["key"], "name": c["name"], "detail": c["fit_reason"]}
         for c in cands
-        if c["score"] > best["score"] and c["fits"] and c["allowed"] and not c["installed"]
+        if c["score"] > best["score"] and c["recommended"] and c["allowed"] and not c["installed"]
     ]
     return Choice(
         task,
@@ -154,23 +242,30 @@ def recommendations(hw: hardware.Hardware | None = None) -> list[dict[str, Any]]
     """Which heavy models this PC can run (used by setup and the System panel)."""
     hw = hw or hardware.detect()
     rec = []
+    order = {"fits": 0, "fits-reduced": 0, "cpu": 1, "tight": 2, "too-big": 3, "no-gpu": 3}
     for spec in registry.ENGINES:
         if spec.tier != "heavy":
             continue
-        ok, why = fits(spec, hw)
-        if ok and spec.min_vram_gb > 0 and not hw.has_gpu:
-            ok, why = False, "needs an NVIDIA GPU to be usable"
+        v = verdict(spec, hw)
         rec.append(
             {
                 "key": spec.key,
                 "name": spec.name,
                 "tasks": spec.tasks,
-                "can_run": ok,
-                "reason": why,
+                "can_run": v["recommended"],
+                "status": v["status"],
+                "label": v["label"],
+                "reason": v["reason"],
+                "profile": v["profile"],
+                "caveat": v["caveat"],
                 "commercial": spec.commercial,
                 "min_vram_gb": spec.min_vram_gb,
+                "vram_full_gb": spec.vram_full_gb,
                 "windows": spec.windows,
+                "_order": order.get(v["status"], 3),
             }
         )
-    rec.sort(key=lambda r: (not r["can_run"], -COMMERCIAL_RANK[r["commercial"]], r["min_vram_gb"]))
+    rec.sort(key=lambda r: (r["_order"], -COMMERCIAL_RANK[r["commercial"]], r["min_vram_gb"]))
+    for r in rec:
+        r.pop("_order")
     return rec
