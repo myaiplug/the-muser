@@ -244,12 +244,12 @@ function GenerateTab({ engines, run, onTrack, toast }: Common & { engines: Engin
   const set = (k: keyof typeof p, v: string | number) => setP((x) => ({ ...x, [k]: v }))
   return (
     <div className="pro-form">
-      <Field label="Model" hint={eng ? `${eng.weights_license}${eng.commercial !== 'yes' ? ` · ${eng.commercial === 'no' ? 'personal use only' : 'commercial: conditions apply'}` : ''}${eng.untested_here ? ' · adapter untested here' : ''}` : 'Picks the best installed model for your hardware'}>
+      <Field label="Model" hint={eng ? `${eng.weights_license}${eng.commercial !== 'yes' ? ` · ${eng.commercial === 'no' ? 'personal use only' : 'commercial: conditions apply'}` : ''}${eng.untested_here ? ' · adapter untested here' : ''}${eng.fit && !eng.fit.recommended ? ` · ${eng.fit.label}` : ''}` : 'Picks the best installed model for your hardware'}>
         <select className="select" value={p.engine} onChange={(e) => set('engine', e.target.value)}>
           <option value="auto">Auto (recommended)</option>
           {gens.map((g) => (
             <option key={g.key} value={g.key} disabled={!g.health.installed && g.key !== 'demo-synth'}>
-              {g.name}{g.health.installed ? '' : ' (not installed)'}{g.commercial === 'no' ? ' · NC' : ''}
+              {g.name}{g.health.installed ? '' : ' (not installed)'}{g.commercial === 'no' ? ' · NC' : ''}{g.fit && g.fit.status === 'too-big' ? ' · not for your card' : g.fit?.status === 'tight' ? ' · tight fit' : ''}
             </option>
           ))}
         </select>

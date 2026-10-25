@@ -543,6 +543,11 @@ a { color: var(--gold); }
 .hw-card div { display: flex; flex-direction: column; padding: 8px 10px; border-radius: 9px; background: #0b0b0e; border: 1px solid var(--line); font-size: 11px; }
 .gold-text { color: var(--gold-hi); }
 .eng-h { display: flex; justify-content: space-between; align-items: center; font: 600 10px var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin: 10px 0 2px; }
+.fit-card { display: flex; flex-direction: column; gap: 6px; }
+.fit-list { display: grid; grid-template-columns: 1fr; gap: 4px; }
+.fit-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 9px; border: 1px solid var(--line); background: #0b0b0e; font-size: 11px; }
+.fit-item em { font-style: normal; font-size: 10.5px; }
+.fit-item.bad strong { color: var(--muted); }
 .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .pick { display: flex; flex-direction: column; padding: 7px 9px; border-radius: 9px; border: 1px solid var(--line); font-size: 11px; }
 .pick em { font-style: normal; font-size: 10.5px; }

@@ -154,10 +154,20 @@ export type EngineInfo = {
   health: { installed: boolean; detail: string; [k: string]: unknown }
   fits: boolean
   fit_reason: string
+  vram_full_gb?: number
+  vram_caveat?: string
+  fit?: EngineFit
 }
+
+export type FitStatus = 'cpu' | 'fits' | 'fits-reduced' | 'tight' | 'too-big' | 'no-gpu'
+export type EngineFit = { status: FitStatus; label: string; reason: string; recommended: boolean; caveat: string; profile: { id: string; label: string; vram_gb: number; how: string } | null }
 
 export type EnginePick = { engine: string | null; name: string | null; reasons: string[]; alternatives: { key: string; name: string }[]; upgrades: { key: string; name: string; detail: string }[] }
 
-export type Hardware = { hardware: { os: string; cpu_count: number; ram_gb: number; gpu: string; vram_gb: number; cuda: boolean; notes: string[] }; tier: string; recommendations: { key: string; name: string; can_run: boolean; reason: string; commercial: string; min_vram_gb: number }[] }
+export type Hardware = {
+  hardware: { os: string; cpu_count: number; ram_gb: number; gpu: string; vram_gb: number; cuda: boolean; notes: string[]; compute_cap?: string; bf16?: boolean }
+  tier: string
+  recommendations: { key: string; name: string; can_run: boolean; status: FitStatus; label: string; reason: string; commercial: string; min_vram_gb: number; vram_full_gb: number; caveat: string; profile: EngineFit['profile'] }[]
+}
 
 export type Analysis = { lufs: number | null; true_peak_db: number; peak_db: number; rms_db: number; duration_s: number; sample_rate: number; channels: number }

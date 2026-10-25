@@ -8,6 +8,13 @@ const COMM: Record<string, [string, string]> = {
   no: ['bad', 'Personal use only'],
 }
 
+const FIT: Record<string, string> = { cpu: 'ok', fits: 'ok', 'fits-reduced': 'ok', tight: 'warn', 'too-big': 'bad', 'no-gpu': 'bad' }
+
+function vramText(min: number, full?: number, cpu?: boolean): string {
+  if (!min) return cpu ? 'CPU OK' : 'GPU'
+  return full && full > min ? `${min} to ${full} GB VRAM` : `${min} GB VRAM`
+}
+
 /** Engines and hardware: what is installed, what fits this machine, one-click installs. */
 export function EnginesPanel({ toast }: { toast?: (t: string, k?: 'info' | 'error' | 'ok') => void }) {
   const [hw, setHw] = useState<Hardware | null>(null)
@@ -62,6 +69,21 @@ export function EnginesPanel({ toast }: { toast?: (t: string, k?: 'info' | 'erro
         <div><span className="muted">CPU</span><strong>{hw.hardware.cpu_count} threads</strong></div>
         <div><span className="muted">Tier</span><strong className="gold-text">{hw.tier}</strong></div>
       </div>
+      {hw.hardware.vram_gb > 0 && (
+        <div className="fit-card">
+          <h3 className="eng-h">On your {hw.hardware.vram_gb} GB card</h3>
+          <div className="fit-list">
+            {hw.recommendations.map((r) => (
+              <div key={r.key} className={`fit-item ${FIT[r.status] ?? 'bad'}`} title={[r.reason, r.caveat].filter(Boolean).join(' ')}>
+                <span className={`lic ${FIT[r.status] ?? 'bad'}`}>{r.status === 'fits' || r.status === 'fits-reduced' ? 'Fits' : r.status === 'tight' ? 'Tight' : r.status === 'cpu' ? 'CPU' : 'Not recommended'}</span>
+                <strong>{r.name}</strong>
+                <em className="muted">{vramText(r.min_vram_gb, r.vram_full_gb)}{r.profile && r.status === 'fits-reduced' ? ` · ${r.profile.label} settings` : ''}</em>
+              </div>
+            ))}
+          </div>
+          {hw.hardware.notes.length > 0 && <div className="sys-detail">{hw.hardware.notes.join(' ')}</div>}
+        </div>
+      )}
       <h3 className="eng-h">Picked for you</h3>
       <div className="picks">
         {Object.entries(picks).filter(([t]) => ['generate', 'separate', 'denoise', 'match', 'midi', 'master'].includes(t)).map(([t, p]) => (
@@ -89,18 +111,21 @@ export function EnginesPanel({ toast }: { toast?: (t: string, k?: 'info' | 'erro
                 {e.untested_here && <span className="lic warn" title="Adapter written against the official docs; not run on this build machine.">Untested here</span>}
                 {e.verified === 'working' && <span className="lic ok">Verified</span>}
                 {e.archived && <span className="lic">Archived</span>}
+                {e.fit && e.tier === 'heavy' && <span className={`lic ${FIT[e.fit.status] ?? 'bad'}`} title={e.fit.reason}>{e.fit.label}</span>}
               </div>
               <div className="sys-detail">{e.summary}</div>
               <div className="eng-meta">
-                {e.weights_license}{e.code_license && e.code_license !== e.weights_license ? ` (code ${e.code_license})` : ''} · {e.min_vram_gb ? `${e.min_vram_gb} GB VRAM` : e.cpu_ok ? 'CPU OK' : 'GPU'} · {e.tasks.join(', ')}
+                {e.weights_license}{e.code_license && e.code_license !== e.weights_license ? ` (code ${e.code_license})` : ''} · {vramText(e.min_vram_gb, e.vram_full_gb, e.cpu_ok)} · {e.tasks.join(', ')}
                 {e.install.download_gb ? ` · ${e.install.download_gb} GB download` : ''}
               </div>
               {!e.health.installed && <div className="sys-detail">{e.health.detail}</div>}
-              {!e.fits && <div className="sys-hint">{e.fit_reason}</div>}
+              {e.tier === 'heavy' && e.fit && (e.fit.status === 'fits-reduced' || e.fit.status === 'tight') && <div className="sys-detail">Your card: {e.fit.reason}</div>}
+              {(!e.fits || e.fit?.status === 'too-big') && <div className="sys-hint">Not recommended for your card: {e.fit_reason}</div>}
+              {e.tier === 'heavy' && e.fit?.caveat && <div className="sys-detail">{e.fit.caveat}</div>}
               {busy && <div className="sys-detail"><span className="spinner" /> {busy}</div>}
             </div>
             {!e.health.installed && e.install.kind !== 'builtin' && (
-              <button className="btn ghost small" disabled={!!busy} onClick={() => void install(e)}>{busy ? 'Installing' : 'Install'}</button>
+              <button className="btn ghost small" disabled={!!busy} onClick={() => void install(e)}>{busy ? 'Installing' : e.fit && !e.fit.recommended && e.tier === 'heavy' ? 'Install anyway' : 'Install'}</button>
             )}
           </div>
         )
