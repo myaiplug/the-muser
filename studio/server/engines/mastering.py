@@ -28,15 +28,55 @@ class Target:
 TARGETS: dict[str, Target] = {
     t.key: t
     for t in [
-        Target("spotify", "Spotify", -14.0, -1.0, "Spotify plays everything at about -14 LUFS. Peaks kept under -1 dBTP so the lossy encode stays clean.", True),
-        Target("youtube", "YouTube", -14.0, -1.0, "YouTube turns louder uploads down to about -14 LUFS, so there is no benefit in going louder.", True),
-        Target("soundcloud", "SoundCloud", -10.0, -1.0, "SoundCloud does not turn most tracks down, so a louder, competitive master works well. -1 dBTP avoids transcode crackle.", True),
-        Target("club", "Club / DJ", -8.0, -0.5, "Loud and dense for club systems and DJ sets. Use the WAV export for the booth.", True),
-        Target("apple", "Apple Music", -16.0, -1.0, "Apple Music Sound Check plays at about -16 LUFS."),
+        Target(
+            "spotify",
+            "Spotify",
+            -14.0,
+            -1.0,
+            "Spotify plays everything at about -14 LUFS. Peaks kept under -1 dBTP so the lossy encode stays clean.",
+            True,
+        ),
+        Target(
+            "youtube",
+            "YouTube",
+            -14.0,
+            -1.0,
+            "YouTube turns louder uploads down to about -14 LUFS, so there is no benefit in going louder.",
+            True,
+        ),
+        Target(
+            "soundcloud",
+            "SoundCloud",
+            -10.0,
+            -1.0,
+            "SoundCloud does not turn most tracks down, so a louder, competitive master works well. -1 dBTP avoids transcode crackle.",
+            True,
+        ),
+        Target(
+            "club",
+            "Club / DJ",
+            -8.0,
+            -0.5,
+            "Loud and dense for club systems and DJ sets. Use the WAV export for the booth.",
+            True,
+        ),
+        Target(
+            "apple", "Apple Music", -16.0, -1.0, "Apple Music Sound Check plays at about -16 LUFS."
+        ),
         Target("tidal", "Tidal", -14.0, -1.0, "Tidal normalizes to about -14 LUFS."),
-        Target("amazon", "Amazon Music", -14.0, -2.0, "Amazon recommends -2 dBTP for its encoders."),
-        Target("podcast", "Podcast / Spoken", -16.0, -1.0, "Common podcast spec (-16 LUFS stereo)."),
-        Target("broadcast", "Broadcast (EBU R128)", -23.0, -1.0, "European TV and radio loudness standard."),
+        Target(
+            "amazon", "Amazon Music", -14.0, -2.0, "Amazon recommends -2 dBTP for its encoders."
+        ),
+        Target(
+            "podcast", "Podcast / Spoken", -16.0, -1.0, "Common podcast spec (-16 LUFS stereo)."
+        ),
+        Target(
+            "broadcast",
+            "Broadcast (EBU R128)",
+            -23.0,
+            -1.0,
+            "European TV and radio loudness standard.",
+        ),
         Target("cd", "CD / Loud master", -9.0, -0.3, "Classic loud master for CD or downloads."),
     ]
 }
@@ -69,7 +109,14 @@ def finish(
     # 1) gain-stage into the chain (so presets behave the same on quiet or loud input)
     staged = x * dsp.db2lin(-18.0 - in_lufs)
     body = [c for c in (chain or []) if c.get("type") != "limiter"]
-    limiter_release = next((c.get("params", {}).get("release_ms", 80) for c in (chain or []) if c.get("type") == "limiter"), 80)
+    limiter_release = next(
+        (
+            c.get("params", {}).get("release_ms", 80)
+            for c in (chain or [])
+            if c.get("type") == "limiter"
+        ),
+        80,
+    )
     y, engine = fx.render_chain(staged, sr, body)
     pre = integrated_lufs(y, sr)
     if not np.isfinite(pre):
@@ -80,12 +127,16 @@ def finish(
     out = y
     measured = pre
     for _ in range(max_iter):
-        out = dsp.true_peak_limit(y * dsp.db2lin(gain_db), sr, ceiling_db=ceiling, release_ms=limiter_release)
+        out = dsp.true_peak_limit(
+            y * dsp.db2lin(gain_db), sr, ceiling_db=ceiling, release_ms=limiter_release
+        )
         measured = integrated_lufs(out, sr)
         err = goal - measured
         if abs(err) <= TOLERANCE_LU * 0.6:
             break
-        gain_db += err * (1.0 if err < 0 else 1.15)  # limiting eats loudness: push a bit more on the way up
+        gain_db += err * (
+            1.0 if err < 0 else 1.15
+        )  # limiting eats loudness: push a bit more on the way up
         gain_db = min(gain_db, 30.0)
     # 3) dense targets (club, CD) on very dynamic material: the limiter alone saturates,
     #    so add gentle soft-clip drive before it until the goal is reached
@@ -102,7 +153,12 @@ def finish(
             if goal - measured <= TOLERANCE_LU * 0.6:
                 break
         if measured > goal + TOLERANCE_LU:
-            out = dsp.true_peak_limit(out * dsp.db2lin(goal - measured), sr, ceiling_db=ceiling, release_ms=limiter_release)
+            out = dsp.true_peak_limit(
+                out * dsp.db2lin(goal - measured),
+                sr,
+                ceiling_db=ceiling,
+                release_ms=limiter_release,
+            )
             measured = integrated_lufs(out, sr)
     tp = true_peak_db(out, sr)
     report = {

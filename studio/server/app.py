@@ -181,7 +181,7 @@ if (WEB_DIST / "assets").exists():
     app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
 
 
-from .routes_v2 import router as _v2_router  # noqa: E402
+from .routes_v2 import router as _v2_router
 
 app.include_router(_v2_router)
 

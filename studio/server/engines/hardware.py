@@ -9,7 +9,7 @@ import subprocess
 import time
 from dataclasses import asdict, dataclass, field
 
-_CACHE: tuple[float, "Hardware"] | None = None
+_CACHE: tuple[float, Hardware] | None = None
 
 
 @dataclass
@@ -64,9 +64,11 @@ def _ram_gb() -> float:
             import ctypes
 
             class MS(ctypes.Structure):
-                _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong), ("ullTotalPhys", ctypes.c_ulonglong)] + [
-                    (n, ctypes.c_ulonglong) for n in ("a", "b", "c", "d", "e", "f")
-                ]
+                _fields_ = [
+                    ("dwLength", ctypes.c_ulong),
+                    ("dwMemoryLoad", ctypes.c_ulong),
+                    ("ullTotalPhys", ctypes.c_ulonglong),
+                ] + [(n, ctypes.c_ulonglong) for n in ("a", "b", "c", "d", "e", "f")]
 
             m = MS()
             m.dwLength = ctypes.sizeof(MS)
@@ -81,7 +83,9 @@ def detect(force: bool = False) -> Hardware:
     global _CACHE
     if _CACHE and not force and time.time() - _CACHE[0] < 60:
         return _CACHE[1]
-    hw = Hardware(os=platform.system() or "unknown", cpu_count=os.cpu_count() or 1, ram_gb=_ram_gb())
+    hw = Hardware(
+        os=platform.system() or "unknown", cpu_count=os.cpu_count() or 1, ram_gb=_ram_gb()
+    )
     forced = os.environ.get("MUSER_FORCE_VRAM_GB")
     if forced is not None:
         hw.vram_gb = float(forced)
@@ -97,8 +101,15 @@ def detect(force: bool = False) -> Hardware:
                 timeout=8,
             ).stdout.strip()
             if out:
-                best = max((line.split(",") for line in out.splitlines()), key=lambda p: float(p[1]))
-                hw.gpu, hw.vram_gb, hw.cuda, hw.source = best[0].strip(), round(float(best[1]) / 1024, 1), True, "nvidia-smi"
+                best = max(
+                    (line.split(",") for line in out.splitlines()), key=lambda p: float(p[1])
+                )
+                hw.gpu, hw.vram_gb, hw.cuda, hw.source = (
+                    best[0].strip(),
+                    round(float(best[1]) / 1024, 1),
+                    True,
+                    "nvidia-smi",
+                )
         except Exception as e:  # pragma: no cover
             hw.notes.append(f"nvidia-smi failed: {e}")
     if hw.source == "none":
@@ -110,10 +121,17 @@ def detect(force: bool = False) -> Hardware:
 
                 if torch.cuda.is_available():
                     p = torch.cuda.get_device_properties(0)
-                    hw.gpu, hw.vram_gb, hw.cuda, hw.source = p.name, round(p.total_memory / 2**30, 1), True, "torch"
+                    hw.gpu, hw.vram_gb, hw.cuda, hw.source = (
+                        p.name,
+                        round(p.total_memory / 2**30, 1),
+                        True,
+                        "torch",
+                    )
         except Exception:
             pass
     if not hw.has_gpu:
-        hw.notes.append("No NVIDIA GPU found: heavy AI models are skipped and CPU-friendly engines are used.")
+        hw.notes.append(
+            "No NVIDIA GPU found: heavy AI models are skipped and CPU-friendly engines are used."
+        )
     _CACHE = (time.time(), hw)
     return hw

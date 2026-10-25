@@ -208,12 +208,11 @@ def jsonable(v: Any) -> Any:
         return {str(k): jsonable(x) for k, x in v.items()}
     if isinstance(v, (list, tuple)):
         return [jsonable(x) for x in v]
-    if hasattr(v, 'item') and type(v).__module__ == 'numpy':
+    if hasattr(v, "item") and type(v).__module__ == "numpy":
         return v.item()
-    if isinstance(v, float) and (v != v or v in (float('inf'), float('-inf'))):
+    if isinstance(v, float) and (v != v or v in (float("inf"), float("-inf"))):
         return None
     return v
-
 
 
 class JobRunner:

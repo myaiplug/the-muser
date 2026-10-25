@@ -18,13 +18,17 @@ def read(path: str | Path, sr: int | None = None) -> tuple[np.ndarray, int]:
     """Read audio as float32 (frames, channels). Optionally resample to ``sr``."""
     p = Path(path)
     if not p.exists():
-        raise FriendlyError("An audio file the Studio needed is missing.", "Re-import the song and try again.")
+        raise FriendlyError(
+            "An audio file the Studio needed is missing.", "Re-import the song and try again."
+        )
     try:
         x, rate = sf.read(str(p), dtype="float32", always_2d=True)
     except Exception:
         x, rate = _read_ffmpeg(p)
     if x.shape[0] == 0:
-        raise FriendlyError("That audio file is empty.", "Pick a file that actually contains sound.")
+        raise FriendlyError(
+            "That audio file is empty.", "Pick a file that actually contains sound."
+        )
     x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
     if sr and rate != sr:
         x = resample(x, rate, sr)
@@ -73,7 +77,9 @@ def is_silent(x: np.ndarray) -> bool:
     return x.size == 0 or float(np.max(np.abs(x))) < SILENCE_PEAK
 
 
-def write(path: str | Path, x: np.ndarray, sr: int, *, allow_silent: bool = False, subtype: str = "PCM_24") -> str:
+def write(
+    path: str | Path, x: np.ndarray, sr: int, *, allow_silent: bool = False, subtype: str = "PCM_24"
+) -> str:
     """Write audio with guardrails.
 
     * NaN / inf are removed.

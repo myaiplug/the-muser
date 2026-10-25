@@ -40,11 +40,23 @@ def _biquad(kind: str, sr: int, f: float, q: float = 0.707, gain_db: float = 0.0
         a = [1 + alpha / A, -2 * cw, 1 - alpha / A]
     elif kind == "lowshelf":
         sa = 2 * math.sqrt(A) * alpha
-        b = [A * ((A + 1) - (A - 1) * cw + sa), 2 * A * ((A - 1) - (A + 1) * cw), A * ((A + 1) - (A - 1) * cw - sa)]
-        a = [(A + 1) + (A - 1) * cw + sa, -2 * ((A - 1) + (A + 1) * cw), (A + 1) + (A - 1) * cw - sa]
+        b = [
+            A * ((A + 1) - (A - 1) * cw + sa),
+            2 * A * ((A - 1) - (A + 1) * cw),
+            A * ((A + 1) - (A - 1) * cw - sa),
+        ]
+        a = [
+            (A + 1) + (A - 1) * cw + sa,
+            -2 * ((A - 1) + (A + 1) * cw),
+            (A + 1) + (A - 1) * cw - sa,
+        ]
     elif kind == "highshelf":
         sa = 2 * math.sqrt(A) * alpha
-        b = [A * ((A + 1) + (A - 1) * cw + sa), -2 * A * ((A - 1) + (A + 1) * cw), A * ((A + 1) + (A - 1) * cw - sa)]
+        b = [
+            A * ((A + 1) + (A - 1) * cw + sa),
+            -2 * A * ((A - 1) + (A + 1) * cw),
+            A * ((A + 1) + (A - 1) * cw - sa),
+        ]
         a = [(A + 1) - (A - 1) * cw + sa, 2 * ((A - 1) - (A + 1) * cw), (A + 1) - (A - 1) * cw - sa]
     else:  # pragma: no cover
         raise ValueError(kind)
@@ -52,7 +64,9 @@ def _biquad(kind: str, sr: int, f: float, q: float = 0.707, gain_db: float = 0.0
     return b, a
 
 
-def biquad(x: np.ndarray, sr: int, kind: str, f: float, q: float = 0.707, gain_db: float = 0.0) -> np.ndarray:
+def biquad(
+    x: np.ndarray, sr: int, kind: str, f: float, q: float = 0.707, gain_db: float = 0.0
+) -> np.ndarray:
     b, a = _biquad(kind, sr, f, q, gain_db)
     return lfilter(b, a, x, axis=0).astype(np.float32)
 
@@ -62,7 +76,9 @@ def biquad(x: np.ndarray, sr: int, kind: str, f: float, q: float = 0.707, gain_d
 # ---------------------------------------------------------------------------
 
 
-def _smooth_gain(target_db: np.ndarray, sr: int, attack_ms: float, release_ms: float, hop: int) -> np.ndarray:
+def _smooth_gain(
+    target_db: np.ndarray, sr: int, attack_ms: float, release_ms: float, hop: int
+) -> np.ndarray:
     """Attack/release smoothing of a gain curve computed per hop (block loop, fast)."""
     rate = sr / hop
     att = math.exp(-1.0 / max(attack_ms * 1e-3 * rate, 1e-6))
@@ -96,25 +112,42 @@ def compressor(
     gr = np.where(
         over <= -k / 2,
         0.0,
-        np.where(over >= k / 2, over * (1 / ratio - 1), (1 / ratio - 1) * (over + k / 2) ** 2 / (2 * k)),
+        np.where(
+            over >= k / 2, over * (1 / ratio - 1), (1 / ratio - 1) * (over + k / 2) ** 2 / (2 * k)
+        ),
     )
     g = _smooth_gain(gr, sr, attack_ms, release_ms, hop)
     gain = np.repeat(10 ** ((g + makeup_db) / 20), hop)[: len(mono)]
     return (x * (gain[:, None] if x.ndim > 1 else gain)).astype(np.float32)
 
 
-def gate(x: np.ndarray, sr: int, threshold_db: float = -50, ratio: float = 4, attack_ms: float = 1, release_ms: float = 100) -> np.ndarray:
+def gate(
+    x: np.ndarray,
+    sr: int,
+    threshold_db: float = -50,
+    ratio: float = 4,
+    attack_ms: float = 1,
+    release_ms: float = 100,
+) -> np.ndarray:
     hop = 64
     mono = np.max(np.abs(x), axis=1)
     n = int(math.ceil(len(mono) / hop))
-    lvl = 20 * np.log10(np.maximum(np.pad(mono, (0, n * hop - len(mono))).reshape(n, hop).max(axis=1), 1e-9))
+    lvl = 20 * np.log10(
+        np.maximum(np.pad(mono, (0, n * hop - len(mono))).reshape(n, hop).max(axis=1), 1e-9)
+    )
     under = np.minimum(lvl - threshold_db, 0)
     gr = under * (ratio - 1)
     g = _smooth_gain(np.maximum(gr, -80), sr, attack_ms, release_ms, hop)
     return (x * np.repeat(10 ** (g / 20), hop)[: len(mono)][:, None]).astype(np.float32)
 
 
-def true_peak_limit(x: np.ndarray, sr: int, ceiling_db: float = -1.0, release_ms: float = 80, lookahead_ms: float = 1.5) -> np.ndarray:
+def true_peak_limit(
+    x: np.ndarray,
+    sr: int,
+    ceiling_db: float = -1.0,
+    release_ms: float = 80,
+    lookahead_ms: float = 1.5,
+) -> np.ndarray:
     """Look-ahead brickwall limiter on the 4x oversampled peak (true-peak safe)."""
     if x.ndim == 1:
         x = x[:, None]
@@ -150,10 +183,14 @@ def true_peak_limit(x: np.ndarray, sr: int, ceiling_db: float = -1.0, release_ms
     return yv.astype(np.float32)
 
 
-def deesser(x: np.ndarray, sr: int, frequency_hz: float = 6500, threshold_db: float = -30, ratio: float = 4) -> np.ndarray:
+def deesser(
+    x: np.ndarray, sr: int, frequency_hz: float = 6500, threshold_db: float = -30, ratio: float = 4
+) -> np.ndarray:
     hi = biquad(biquad(x, sr, "highpass", frequency_hz), sr, "highpass", frequency_hz)
     lo = x - hi
-    return (lo + compressor(hi, sr, threshold_db, ratio, attack_ms=1, release_ms=60, knee_db=3)).astype(np.float32)
+    return (
+        lo + compressor(hi, sr, threshold_db, ratio, attack_ms=1, release_ms=60, knee_db=3)
+    ).astype(np.float32)
 
 
 # ---------------------------------------------------------------------------
@@ -219,19 +256,33 @@ def _allpass(x: np.ndarray, d: int, g: float = 0.5) -> np.ndarray:
     return y[:n]
 
 
-def delay(x: np.ndarray, sr: int, time_ms: float = 250, feedback: float = 0.3, mix: float = 0.2) -> np.ndarray:
+def delay(
+    x: np.ndarray, sr: int, time_ms: float = 250, feedback: float = 0.3, mix: float = 0.2
+) -> np.ndarray:
     d = max(1, int(time_ms * 1e-3 * sr))
     wet = _fb_comb(x, d, min(feedback, 0.95))
     return (x * (1 - mix * 0.5) + wet * mix).astype(np.float32)
 
 
-def chorus(x: np.ndarray, sr: int, rate_hz: float = 1.0, depth: float = 0.25, centre_delay_ms: float = 7, feedback: float = 0.0, mix: float = 0.5) -> np.ndarray:
+def chorus(
+    x: np.ndarray,
+    sr: int,
+    rate_hz: float = 1.0,
+    depth: float = 0.25,
+    centre_delay_ms: float = 7,
+    feedback: float = 0.0,
+    mix: float = 0.5,
+) -> np.ndarray:
     n = x.shape[0]
     t = np.arange(n) / sr
     out = np.empty_like(x)
     for ch in range(x.shape[1]):
         phase = ch * math.pi / 2
-        dl = (centre_delay_ms + depth * centre_delay_ms * np.sin(2 * math.pi * rate_hz * t + phase)) * 1e-3 * sr
+        dl = (
+            (centre_delay_ms + depth * centre_delay_ms * np.sin(2 * math.pi * rate_hz * t + phase))
+            * 1e-3
+            * sr
+        )
         idx = np.arange(n) - dl
         i0 = np.clip(np.floor(idx).astype(int), 0, n - 1)
         frac = idx - np.floor(idx)
@@ -241,7 +292,14 @@ def chorus(x: np.ndarray, sr: int, rate_hz: float = 1.0, depth: float = 0.25, ce
     return out.astype(np.float32)
 
 
-def reverb(x: np.ndarray, sr: int, room_size: float = 0.5, damping: float = 0.5, width: float = 1.0, mix: float = 0.25) -> np.ndarray:
+def reverb(
+    x: np.ndarray,
+    sr: int,
+    room_size: float = 0.5,
+    damping: float = 0.5,
+    width: float = 1.0,
+    mix: float = 0.25,
+) -> np.ndarray:
     """Freeverb-style: 8 parallel damped combs + 4 series allpasses per channel.
 
     Returns the same length as the input (the tail beyond the end is dropped so
@@ -275,9 +333,11 @@ def trim_tail(y: np.ndarray, n: int) -> np.ndarray:
     return y[:n] if y.shape[0] > n else np.pad(y, ((0, n - y.shape[0]), (0, 0)))
 
 
-def match_eq(x: np.ndarray, ref: np.ndarray, sr: int, amount: float = 1.0, max_db: float = 12.0) -> np.ndarray:
+def match_eq(
+    x: np.ndarray, ref: np.ndarray, sr: int, amount: float = 1.0, max_db: float = 12.0
+) -> np.ndarray:
     """Built-in reference matching: smoothed long-term spectrum match (MIT)."""
-    from scipy.signal import stft, istft, welch
+    from scipy.signal import istft, stft, welch
 
     def spec(sig):
         mono = sig.mean(axis=1)

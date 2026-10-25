@@ -34,7 +34,9 @@ def fits(spec: registry.EngineSpec, hw: hardware.Hardware) -> tuple[bool, str]:
     return False, f"needs {spec.min_vram_gb:g} GB of GPU memory (you have {hw.vram_gb:g} GB)"
 
 
-def allowed(spec: registry.EngineSpec, commercial_only: bool, allow_conditional: bool = True) -> bool:
+def allowed(
+    spec: registry.EngineSpec, commercial_only: bool, allow_conditional: bool = True
+) -> bool:
     if not commercial_only:
         return True
     if spec.commercial == "no":
@@ -54,8 +56,13 @@ def score(spec: registry.EngineSpec, task: str, hw: hardware.Hardware) -> float:
     return s
 
 
-def candidates(task: str, hw: hardware.Hardware | None = None, commercial_only: bool = True,
-               allow_conditional: bool = True, health_fn=None) -> list[dict[str, Any]]:
+def candidates(
+    task: str,
+    hw: hardware.Hardware | None = None,
+    commercial_only: bool = True,
+    allow_conditional: bool = True,
+    health_fn=None,
+) -> list[dict[str, Any]]:
     hw = hw or hardware.detect()
     health_fn = health_fn or registry.health
     out = []
@@ -64,18 +71,33 @@ def candidates(task: str, hw: hardware.Hardware | None = None, commercial_only: 
             continue
         ok, why = fits(spec, hw)
         h = health_fn(spec)
-        out.append({
-            "key": spec.key, "name": spec.name, "score": score(spec, task, hw), "fits": ok, "fit_reason": why,
-            "installed": h["installed"], "healthy": h["healthy"], "detail": h["detail"],
-            "allowed": allowed(spec, commercial_only, allow_conditional), "commercial": spec.commercial,
-            "verified": spec.verified,
-        })
+        out.append(
+            {
+                "key": spec.key,
+                "name": spec.name,
+                "score": score(spec, task, hw),
+                "fits": ok,
+                "fit_reason": why,
+                "installed": h["installed"],
+                "healthy": h["healthy"],
+                "detail": h["detail"],
+                "allowed": allowed(spec, commercial_only, allow_conditional),
+                "commercial": spec.commercial,
+                "verified": spec.verified,
+            }
+        )
     out.sort(key=lambda c: -c["score"])
     return out
 
 
-def select(task: str, hw: hardware.Hardware | None = None, commercial_only: bool = True,
-           allow_conditional: bool = True, prefer: str | None = None, health_fn=None) -> Choice:
+def select(
+    task: str,
+    hw: hardware.Hardware | None = None,
+    commercial_only: bool = True,
+    allow_conditional: bool = True,
+    prefer: str | None = None,
+    health_fn=None,
+) -> Choice:
     """Return the best usable engine. ``prefer`` forces a key if it is usable."""
     if task not in registry.TASKS:
         raise FriendlyError(f"Unknown job type '{task}'.")
@@ -87,18 +109,30 @@ def select(task: str, hw: hardware.Hardware | None = None, commercial_only: bool
         if forced is None:
             raise FriendlyError(f"'{prefer}' can't do that job.")
         if not forced["healthy"]:
-            raise FriendlyError(f"{forced['name']} is not installed yet.", "Open System and press Install.")
+            raise FriendlyError(
+                f"{forced['name']} is not installed yet.", "Open System and press Install."
+            )
         if not forced["fits"]:
             raise FriendlyError(f"{forced['name']} {forced['fit_reason']}.")
         usable = [forced] + [c for c in usable if c is not forced]
     if not usable:
-        raise FriendlyError("No engine for this job is installed yet.", "Open System and press Install on one of the suggested tools.")
+        raise FriendlyError(
+            "No engine for this job is installed yet.",
+            "Open System and press Install on one of the suggested tools.",
+        )
     best = usable[0]
     spec = registry.get(best["key"])
-    reasons = [f"Best quality installed for '{registry.TASKS[task]}'" if not prefer or prefer == "auto" else "You picked this engine",
-               best["fit_reason"][:1].upper() + best["fit_reason"][1:],
-               {"yes": "Commercial-safe output", "conditional": "Commercial use has conditions: " + spec.commercial_note,
-                "no": "Non-commercial licence: personal use only"}[spec.commercial]]
+    reasons = [
+        f"Best quality installed for '{registry.TASKS[task]}'"
+        if not prefer or prefer == "auto"
+        else "You picked this engine",
+        best["fit_reason"][:1].upper() + best["fit_reason"][1:],
+        {
+            "yes": "Commercial-safe output",
+            "conditional": "Commercial use has conditions: " + spec.commercial_note,
+            "no": "Non-commercial licence: personal use only",
+        }[spec.commercial],
+    ]
     if spec.verified != "working":
         reasons.append("Adapter untested here: report issues if it fails")
     upgrades = [
@@ -106,8 +140,14 @@ def select(task: str, hw: hardware.Hardware | None = None, commercial_only: bool
         for c in cands
         if c["score"] > best["score"] and c["fits"] and c["allowed"] and not c["installed"]
     ]
-    return Choice(task, best["key"], best["name"], reasons,
-                  alternatives=[{"key": c["key"], "name": c["name"]} for c in usable[1:]], upgrades=upgrades)
+    return Choice(
+        task,
+        best["key"],
+        best["name"],
+        reasons,
+        alternatives=[{"key": c["key"], "name": c["name"]} for c in usable[1:]],
+        upgrades=upgrades,
+    )
 
 
 def recommendations(hw: hardware.Hardware | None = None) -> list[dict[str, Any]]:
@@ -120,7 +160,17 @@ def recommendations(hw: hardware.Hardware | None = None) -> list[dict[str, Any]]
         ok, why = fits(spec, hw)
         if ok and spec.min_vram_gb > 0 and not hw.has_gpu:
             ok, why = False, "needs an NVIDIA GPU to be usable"
-        rec.append({"key": spec.key, "name": spec.name, "tasks": spec.tasks, "can_run": ok, "reason": why,
-                    "commercial": spec.commercial, "min_vram_gb": spec.min_vram_gb, "windows": spec.windows})
+        rec.append(
+            {
+                "key": spec.key,
+                "name": spec.name,
+                "tasks": spec.tasks,
+                "can_run": ok,
+                "reason": why,
+                "commercial": spec.commercial,
+                "min_vram_gb": spec.min_vram_gb,
+                "windows": spec.windows,
+            }
+        )
     rec.sort(key=lambda r: (not r["can_run"], -COMMERCIAL_RANK[r["commercial"]], r["min_vram_gb"]))
     return rec

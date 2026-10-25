@@ -90,8 +90,23 @@ def validate(p: dict, known: dict[str, dict] | None = None) -> dict:
     name = str(p.get("name") or "").strip()
     if not name:
         raise FriendlyError("Give the preset a name.")
-    out = {k: p[k] for k in ("id", "name", "category", "subcategory", "tags", "description", "version", "factory",
-                             "role", "easy", "icon") if k in p}
+    out = {
+        k: p[k]
+        for k in (
+            "id",
+            "name",
+            "category",
+            "subcategory",
+            "tags",
+            "description",
+            "version",
+            "factory",
+            "role",
+            "easy",
+            "icon",
+        )
+        if k in p
+    }
     out["name"] = name[:80]
     out["tags"] = [str(t)[:30] for t in (p.get("tags") or [])][:12]
     out["description"] = str(p.get("description") or "")[:300]
@@ -102,14 +117,21 @@ def validate(p: dict, known: dict[str, dict] | None = None) -> dict:
             m = p.get("master") or {}
             if m.get("target") not in mastering.TARGETS:
                 raise FriendlyError(f"Unknown loudness target '{m.get('target')}'.")
-            out["master"] = {"target": m["target"], "chain": fx.normalize_chain(m.get("chain")),
-                             "release_ms": float(m.get("release_ms", 80))}
+            out["master"] = {
+                "target": m["target"],
+                "chain": fx.normalize_chain(m.get("chain")),
+                "release_ms": float(m.get("release_ms", 80)),
+            }
         else:  # genre
             g = p.get("generate") or {}
             if not str(g.get("prompt") or "").strip():
                 raise FriendlyError("A genre starter needs a prompt.")
-            out["generate"] = {"prompt": str(g["prompt"])[:500], "bpm": int(g.get("bpm") or 100),
-                               "duration_s": float(g.get("duration_s") or 30), "lyrics": str(g.get("lyrics") or "")}
+            out["generate"] = {
+                "prompt": str(g["prompt"])[:500],
+                "bpm": int(g.get("bpm") or 100),
+                "duration_s": float(g.get("duration_s") or 30),
+                "lyrics": str(g.get("lyrics") or ""),
+            }
             stems = p.get("stems") or {}
             for role, ref in stems.items():
                 if isinstance(ref, str) and ref not in known:
@@ -122,13 +144,18 @@ def validate(p: dict, known: dict[str, dict] | None = None) -> dict:
                 raise FriendlyError(f"Genre starter refers to a missing master preset '{mref}'.")
             out["master"] = mref
             mac = p.get("macros") or {}
-            out["macros"] = {k: int(min(max(float(mac.get(k, 50)), 0), 100)) for k in ("energy", "vocals", "bass", "brightness", "space")}
+            out["macros"] = {
+                k: int(min(max(float(mac.get(k, 50)), 0), 100))
+                for k in ("energy", "vocals", "bass", "brightness", "space")
+            }
     except ValueError as e:
         raise FriendlyError(f"That preset has a problem: {e}") from e
     return out
 
 
-def listing(category: str | None = None, q: str | None = None, favorites_only: bool = False) -> list[dict]:
+def listing(
+    category: str | None = None, q: str | None = None, favorites_only: bool = False
+) -> list[dict]:
     favs = favorites()
     terms = [t for t in (q or "").lower().split() if t]
     items = []
@@ -137,11 +164,21 @@ def listing(category: str | None = None, q: str | None = None, favorites_only: b
             continue
         if favorites_only and p["id"] not in favs:
             continue
-        hay = " ".join([p["name"], p.get("description", ""), p.get("subcategory", ""), p["category"], " ".join(p.get("tags", []))]).lower()
+        hay = " ".join(
+            [
+                p["name"],
+                p.get("description", ""),
+                p.get("subcategory", ""),
+                p["category"],
+                " ".join(p.get("tags", [])),
+            ]
+        ).lower()
         if terms and not all(t in hay for t in terms):
             continue
         items.append({**p, "favorite": p["id"] in favs, "user": not p.get("factory", False)})
-    items.sort(key=lambda p: (not p["favorite"], p["category"], p.get("subcategory", ""), p["name"]))
+    items.sort(
+        key=lambda p: (not p["favorite"], p["category"], p.get("subcategory", ""), p["name"])
+    )
     return items
 
 
@@ -176,14 +213,18 @@ def save_user(p: dict) -> dict:
     clean["id"] = pid
     with _lock:
         USER_DIR.mkdir(parents=True, exist_ok=True)
-        (USER_DIR / (pid.replace("/", "__") + ".json")).write_text(json.dumps(clean, indent=2), encoding="utf-8")
+        (USER_DIR / (pid.replace("/", "__") + ".json")).write_text(
+            json.dumps(clean, indent=2), encoding="utf-8"
+        )
     return clean
 
 
 def delete_user(pid: str) -> bool:
     p = get(pid)
     if p.get("factory", False):
-        raise FriendlyError("Factory presets can't be deleted. You can hide them by not favoriting them.")
+        raise FriendlyError(
+            "Factory presets can't be deleted. You can hide them by not favoriting them."
+        )
     f = USER_DIR / (pid.replace("/", "__") + ".json")
     if f.exists():
         f.unlink()
@@ -193,7 +234,9 @@ def delete_user(pid: str) -> bool:
 
 def export_bundle(ids: list[str] | None = None) -> dict:
     src = all_presets()
-    chosen = [src[i] for i in (ids or [k for k, v in src.items() if not v.get("factory")]) if i in src]
+    chosen = [
+        src[i] for i in (ids or [k for k, v in src.items() if not v.get("factory")]) if i in src
+    ]
     return {"format": "muser-presets", "version": 1, "exported": time.time(), "presets": chosen}
 
 

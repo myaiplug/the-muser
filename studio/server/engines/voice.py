@@ -10,7 +10,9 @@ from pathlib import Path
 from .errors import FriendlyError
 
 
-def convert(engine: str, src: str, out: str, model_path: str = "", reference: str = "", transpose: int = 0) -> str:
+def convert(
+    engine: str, src: str, out: str, model_path: str = "", reference: str = "", transpose: int = 0
+) -> str:
     if engine == "applio":
         from src.voice.rvc_wrapper import convert_voice
 

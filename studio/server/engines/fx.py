@@ -19,7 +19,9 @@ from . import dsp
 P = dict  # param spec: {min, max, default, unit, label}
 
 
-def _p(lo: float, hi: float, default: float, unit: str = "", label: str = "", step: float | None = None) -> dict:
+def _p(
+    lo: float, hi: float, default: float, unit: str = "", label: str = "", step: float | None = None
+) -> dict:
     d = {"min": lo, "max": hi, "default": default, "unit": unit, "label": label}
     if step is not None:
         d["step"] = step
@@ -27,23 +29,47 @@ def _p(lo: float, hi: float, default: float, unit: str = "", label: str = "", st
 
 
 PLUGINS: dict[str, dict[str, Any]] = {
-    "gain": {"label": "Gain", "group": "utility", "params": {"gain_db": _p(-24, 24, 0, "dB", "Gain")}},
-    "highpass": {"label": "High-pass", "group": "eq", "params": {"cutoff_hz": _p(20, 2000, 30, "Hz", "Cutoff")}},
-    "lowpass": {"label": "Low-pass", "group": "eq", "params": {"cutoff_hz": _p(500, 20000, 18000, "Hz", "Cutoff")}},
+    "gain": {
+        "label": "Gain",
+        "group": "utility",
+        "params": {"gain_db": _p(-24, 24, 0, "dB", "Gain")},
+    },
+    "highpass": {
+        "label": "High-pass",
+        "group": "eq",
+        "params": {"cutoff_hz": _p(20, 2000, 30, "Hz", "Cutoff")},
+    },
+    "lowpass": {
+        "label": "Low-pass",
+        "group": "eq",
+        "params": {"cutoff_hz": _p(500, 20000, 18000, "Hz", "Cutoff")},
+    },
     "lowshelf": {
         "label": "Low shelf",
         "group": "eq",
-        "params": {"cutoff_hz": _p(30, 600, 100, "Hz", "Freq"), "gain_db": _p(-18, 18, 0, "dB", "Gain"), "q": _p(0.3, 2, 0.7, "", "Q")},
+        "params": {
+            "cutoff_hz": _p(30, 600, 100, "Hz", "Freq"),
+            "gain_db": _p(-18, 18, 0, "dB", "Gain"),
+            "q": _p(0.3, 2, 0.7, "", "Q"),
+        },
     },
     "peak": {
         "label": "Bell EQ",
         "group": "eq",
-        "params": {"freq_hz": _p(40, 16000, 1000, "Hz", "Freq"), "gain_db": _p(-18, 18, 0, "dB", "Gain"), "q": _p(0.2, 10, 1.0, "", "Q")},
+        "params": {
+            "freq_hz": _p(40, 16000, 1000, "Hz", "Freq"),
+            "gain_db": _p(-18, 18, 0, "dB", "Gain"),
+            "q": _p(0.2, 10, 1.0, "", "Q"),
+        },
     },
     "highshelf": {
         "label": "High shelf",
         "group": "eq",
-        "params": {"cutoff_hz": _p(1500, 16000, 8000, "Hz", "Freq"), "gain_db": _p(-18, 18, 0, "dB", "Gain"), "q": _p(0.3, 2, 0.7, "", "Q")},
+        "params": {
+            "cutoff_hz": _p(1500, 16000, 8000, "Hz", "Freq"),
+            "gain_db": _p(-18, 18, 0, "dB", "Gain"),
+            "q": _p(0.3, 2, 0.7, "", "Q"),
+        },
     },
     "compressor": {
         "label": "Compressor",
@@ -110,7 +136,11 @@ PLUGINS: dict[str, dict[str, Any]] = {
     "delay": {
         "label": "Delay",
         "group": "space",
-        "params": {"time_ms": _p(10, 2000, 250, "ms", "Time"), "feedback": _p(0, 0.95, 0.3, "", "Feedback"), "mix": _p(0, 1, 0.2, "", "Mix")},
+        "params": {
+            "time_ms": _p(10, 2000, 250, "ms", "Time"),
+            "feedback": _p(0, 0.95, 0.3, "", "Feedback"),
+            "mix": _p(0, 1, 0.2, "", "Mix"),
+        },
     },
     "reverb": {
         "label": "Reverb",
@@ -122,11 +152,18 @@ PLUGINS: dict[str, dict[str, Any]] = {
             "mix": _p(0, 1, 0.25, "", "Mix"),
         },
     },
-    "width": {"label": "Stereo width", "group": "space", "params": {"width": _p(0, 2, 1, "x", "Width")}},
+    "width": {
+        "label": "Stereo width",
+        "group": "space",
+        "params": {"width": _p(0, 2, 1, "x", "Width")},
+    },
     "limiter": {
         "label": "True-peak limiter",
         "group": "dynamics",
-        "params": {"ceiling_db": _p(-12, 0, -1, "dBTP", "Ceiling"), "release_ms": _p(1, 1000, 80, "ms", "Release")},
+        "params": {
+            "ceiling_db": _p(-12, 0, -1, "dBTP", "Ceiling"),
+            "release_ms": _p(1, 1000, 80, "ms", "Release"),
+        },
     },
 }
 
@@ -143,7 +180,7 @@ def normalize_chain(chain: list[dict] | None) -> list[dict]:
         for k, ps in spec.items():
             v = (item.get("params") or {}).get(k, ps["default"])
             params[k] = float(np.clip(float(v), ps["min"], ps["max"]))
-        extra = set((item.get("params") or {})) - set(spec)
+        extra = set(item.get("params") or {}) - set(spec)
         if extra:
             raise ValueError(f"Unknown parameter(s) {sorted(extra)} for '{t}'")
         out.append({"type": t, "params": params, "bypass": bool(item.get("bypass", False))})
@@ -176,21 +213,51 @@ def _pb_plugin(t: str, p: dict):
     if t == "lowshelf":
         return pb.LowShelfFilter(cutoff_frequency_hz=p["cutoff_hz"], gain_db=p["gain_db"], q=p["q"])
     if t == "highshelf":
-        return pb.HighShelfFilter(cutoff_frequency_hz=p["cutoff_hz"], gain_db=p["gain_db"], q=p["q"])
+        return pb.HighShelfFilter(
+            cutoff_frequency_hz=p["cutoff_hz"], gain_db=p["gain_db"], q=p["q"]
+        )
     if t == "peak":
         return pb.PeakFilter(cutoff_frequency_hz=p["freq_hz"], gain_db=p["gain_db"], q=p["q"])
     if t == "compressor":
-        return pb.Compressor(threshold_db=p["threshold_db"], ratio=p["ratio"], attack_ms=p["attack_ms"], release_ms=p["release_ms"])
+        return pb.Compressor(
+            threshold_db=p["threshold_db"],
+            ratio=p["ratio"],
+            attack_ms=p["attack_ms"],
+            release_ms=p["release_ms"],
+        )
     if t == "gate":
-        return pb.NoiseGate(threshold_db=p["threshold_db"], ratio=p["ratio"], attack_ms=p["attack_ms"], release_ms=p["release_ms"])
+        return pb.NoiseGate(
+            threshold_db=p["threshold_db"],
+            ratio=p["ratio"],
+            attack_ms=p["attack_ms"],
+            release_ms=p["release_ms"],
+        )
     if t == "chorus":
-        return pb.Chorus(rate_hz=p["rate_hz"], depth=p["depth"], centre_delay_ms=p["centre_delay_ms"], feedback=p["feedback"], mix=p["mix"])
+        return pb.Chorus(
+            rate_hz=p["rate_hz"],
+            depth=p["depth"],
+            centre_delay_ms=p["centre_delay_ms"],
+            feedback=p["feedback"],
+            mix=p["mix"],
+        )
     if t == "phaser":
-        return pb.Phaser(rate_hz=p["rate_hz"], depth=p["depth"], centre_frequency_hz=p["centre_frequency_hz"], feedback=p["feedback"], mix=p["mix"])
+        return pb.Phaser(
+            rate_hz=p["rate_hz"],
+            depth=p["depth"],
+            centre_frequency_hz=p["centre_frequency_hz"],
+            feedback=p["feedback"],
+            mix=p["mix"],
+        )
     if t == "delay":
         return pb.Delay(delay_seconds=p["time_ms"] / 1000, feedback=p["feedback"], mix=p["mix"])
     if t == "reverb":
-        return pb.Reverb(room_size=p["room_size"], damping=p["damping"], width=p["width"], wet_level=p["mix"] * 0.6, dry_level=1 - p["mix"] * 0.4)
+        return pb.Reverb(
+            room_size=p["room_size"],
+            damping=p["damping"],
+            width=p["width"],
+            wet_level=p["mix"] * 0.6,
+            dry_level=1 - p["mix"] * 0.4,
+        )
     if t == "bitcrush":
         return None  # builtin handles mix
     return None
@@ -206,7 +273,9 @@ def _builtin(x: np.ndarray, sr: int, t: str, p: dict) -> np.ndarray:
     if t == "peak":
         return dsp.biquad(x, sr, "peak", p["freq_hz"], p["q"], p["gain_db"])
     if t == "compressor":
-        return dsp.compressor(x, sr, p["threshold_db"], p["ratio"], p["attack_ms"], p["release_ms"], p["makeup_db"])
+        return dsp.compressor(
+            x, sr, p["threshold_db"], p["ratio"], p["attack_ms"], p["release_ms"], p["makeup_db"]
+        )
     if t == "gate":
         return dsp.gate(x, sr, p["threshold_db"], p["ratio"], p["attack_ms"], p["release_ms"])
     if t == "deesser":
@@ -229,7 +298,9 @@ def _builtin(x: np.ndarray, sr: int, t: str, p: dict) -> np.ndarray:
     raise ValueError(t)  # pragma: no cover
 
 
-def render_chain(x: np.ndarray, sr: int, chain: list[dict] | None, engine: str = "auto") -> tuple[np.ndarray, str]:
+def render_chain(
+    x: np.ndarray, sr: int, chain: list[dict] | None, engine: str = "auto"
+) -> tuple[np.ndarray, str]:
     """Run a chain. Returns (audio, engine_used) where engine_used is
     ``pedalboard``, ``builtin`` or ``pedalboard+builtin``."""
     chain = normalize_chain(chain)

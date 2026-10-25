@@ -17,9 +17,9 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from . import registry
 from .errors import FriendlyError
@@ -37,7 +37,7 @@ class GenParams:
     seed: int = -1
     temperature: float = 1.0
 
-    def clamp(self) -> "GenParams":
+    def clamp(self) -> GenParams:
         self.duration_s = float(min(max(self.duration_s, 5), 285))
         self.steps = int(min(max(self.steps, 0), 500))
         self.guidance = float(min(max(self.guidance, 0), 20))
@@ -49,7 +49,9 @@ def _repo(key: str) -> Path:
     env = os.environ.get(f"MUSER_{key.upper().replace('-', '_')}_DIR")
     p = Path(env) if env else Path(registry.MODELS_DIR) / key
     if not p.exists():
-        raise FriendlyError(f"{registry.get(key).name} is not installed.", "Open System and press Install.")
+        raise FriendlyError(
+            f"{registry.get(key).name} is not installed.", "Open System and press Install."
+        )
     return p
 
 
@@ -60,11 +62,27 @@ def _venv_python(repo: Path) -> str:
     return sys.executable
 
 
-def _run(cmd: list[str], cwd: Path, progress: Progress | None, env: dict | None = None, timeout: int = 3600) -> None:
+def _run(
+    cmd: list[str],
+    cwd: Path,
+    progress: Progress | None,
+    env: dict | None = None,
+    timeout: int = 3600,
+) -> None:
     if progress:
-        progress("Running " + Path(cmd[1] if len(cmd) > 1 else cmd[0]).name + " (this can take a few minutes) ...")
-    proc = subprocess.Popen(cmd, cwd=str(cwd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                            env={**os.environ, **(env or {})})
+        progress(
+            "Running "
+            + Path(cmd[1] if len(cmd) > 1 else cmd[0]).name
+            + " (this can take a few minutes) ..."
+        )
+    proc = subprocess.Popen(
+        cmd,
+        cwd=str(cwd),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        env={**os.environ, **(env or {})},
+    )
     tail: list[str] = []
     assert proc.stdout is not None
     start = time.time()
@@ -98,7 +116,9 @@ def _to_wav(src: Path, out: Path) -> str:
 
 def lyrics_to_lrc(lyrics: str, duration_s: float) -> str:
     """DiffRhythm wants timestamped LRC. Spread lines evenly after a short intro."""
-    lines = [ln.strip() for ln in lyrics.splitlines() if ln.strip() and not ln.strip().startswith("[")]
+    lines = [
+        ln.strip() for ln in lyrics.splitlines() if ln.strip() and not ln.strip().startswith("[")
+    ]
     if not lines:
         return ""
     start, end = min(10.0, duration_s * 0.1), duration_s * 0.92
@@ -120,10 +140,20 @@ def diffrhythm(p: GenParams, out: Path, progress: Progress | None, vram_gb: floa
     lrc = work / "lyrics.lrc"
     lrc.write_text(lyrics_to_lrc(p.lyrics, p.duration_s), encoding="utf-8")
     full = p.duration_s > 95
-    cmd = [_venv_python(repo), "infer/infer.py", "--lrc-path", str(lrc), "--ref-prompt", p.prompt,
-           "--audio-length", str(int(p.duration_s) if full else 95),
-           "--repo-id", "ASLP-lab/DiffRhythm-full" if full else "ASLP-lab/DiffRhythm-1_2",
-           "--output-dir", str(work)]
+    cmd = [
+        _venv_python(repo),
+        "infer/infer.py",
+        "--lrc-path",
+        str(lrc),
+        "--ref-prompt",
+        p.prompt,
+        "--audio-length",
+        str(int(p.duration_s) if full else 95),
+        "--repo-id",
+        "ASLP-lab/DiffRhythm-full" if full else "ASLP-lab/DiffRhythm-1_2",
+        "--output-dir",
+        str(work),
+    ]
     if vram_gb < 12:
         cmd.append("--chunked")
     _run(cmd, repo, progress)
@@ -137,11 +167,30 @@ def yue(p: GenParams, out: Path, progress: Progress | None, vram_gb: float) -> s
     (work / "genre.txt").write_text(p.prompt, encoding="utf-8")
     (work / "lyrics.txt").write_text(p.lyrics or "[verse]\nla la la", encoding="utf-8")
     segments = 2 if vram_gb < 24 else max(2, min(6, int(p.duration_s // 30)))
-    cmd = [_venv_python(repo), "infer.py", "--cuda_idx", "0",
-           "--stage1_model", "m-a-p/YuE-s1-7B-anneal-en-cot", "--stage2_model", "m-a-p/YuE-s2-1B-general",
-           "--genre_txt", str(work / "genre.txt"), "--lyrics_txt", str(work / "lyrics.txt"),
-           "--run_n_segments", str(segments), "--stage2_batch_size", "4" if vram_gb >= 24 else "2",
-           "--output_dir", str(work), "--max_new_tokens", "3000", "--repetition_penalty", "1.1"]
+    cmd = [
+        _venv_python(repo),
+        "infer.py",
+        "--cuda_idx",
+        "0",
+        "--stage1_model",
+        "m-a-p/YuE-s1-7B-anneal-en-cot",
+        "--stage2_model",
+        "m-a-p/YuE-s2-1B-general",
+        "--genre_txt",
+        str(work / "genre.txt"),
+        "--lyrics_txt",
+        str(work / "lyrics.txt"),
+        "--run_n_segments",
+        str(segments),
+        "--stage2_batch_size",
+        "4" if vram_gb >= 24 else "2",
+        "--output_dir",
+        str(work),
+        "--max_new_tokens",
+        "3000",
+        "--repetition_penalty",
+        "1.1",
+    ]
     if p.seed >= 0:
         cmd += ["--seed", str(p.seed)]
     _run(cmd, repo / "inference", progress)
@@ -152,10 +201,26 @@ def songgeneration(p: GenParams, out: Path, progress: Progress | None, vram_gb: 
     repo = _repo("songgeneration")
     work = out.parent / "levo_work"
     work.mkdir(parents=True, exist_ok=True)
-    lyric = " ; ".join(f"[verse] {ln.strip()}" for ln in p.lyrics.splitlines() if ln.strip()) or "[inst-medium]"
-    (work / "in.jsonl").write_text(json.dumps({"idx": "muser", "gt_lyric": lyric, "descriptions": p.prompt}) + "\n", encoding="utf-8")
+    lyric = (
+        " ; ".join(f"[verse] {ln.strip()}" for ln in p.lyrics.splitlines() if ln.strip())
+        or "[inst-medium]"
+    )
+    (work / "in.jsonl").write_text(
+        json.dumps({"idx": "muser", "gt_lyric": lyric, "descriptions": p.prompt}) + "\n",
+        encoding="utf-8",
+    )
     bash = shutil.which("bash") or "bash"
-    _run([bash, "generate.sh", str(repo / "ckpt" / "songgeneration_base"), str(work / "in.jsonl"), str(work / "out")], repo, progress)
+    _run(
+        [
+            bash,
+            "generate.sh",
+            str(repo / "ckpt" / "songgeneration_base"),
+            str(work / "in.jsonl"),
+            str(work / "out"),
+        ],
+        repo,
+        progress,
+    )
     return _to_wav(_newest_audio(work / "out"), out)
 
 
@@ -172,13 +237,23 @@ def stable_audio_open(p: GenParams, out: Path, progress: Progress | None, vram_g
     from diffusers import StableAudioPipeline  # type: ignore
 
     if progress:
-        progress("Loading Stable Audio Open (gated model: accept the licence on Hugging Face first) ...")
+        progress(
+            "Loading Stable Audio Open (gated model: accept the licence on Hugging Face first) ..."
+        )
     dev = "cuda" if torch.cuda.is_available() else "cpu"
-    pipe = StableAudioPipeline.from_pretrained("stabilityai/stable-audio-open-1.0",
-                                               torch_dtype=torch.float16 if dev == "cuda" else torch.float32).to(dev)
-    audio = pipe(p.prompt, negative_prompt="low quality", num_inference_steps=p.steps or 100,
-                 guidance_scale=p.guidance or 7.0, audio_end_in_s=min(p.duration_s, 47.0),
-                 num_waveforms_per_prompt=1, generator=_seed(p)).audios
+    pipe = StableAudioPipeline.from_pretrained(
+        "stabilityai/stable-audio-open-1.0",
+        torch_dtype=torch.float16 if dev == "cuda" else torch.float32,
+    ).to(dev)
+    audio = pipe(
+        p.prompt,
+        negative_prompt="low quality",
+        num_inference_steps=p.steps or 100,
+        guidance_scale=p.guidance or 7.0,
+        audio_end_in_s=min(p.duration_s, 47.0),
+        num_waveforms_per_prompt=1,
+        generator=_seed(p),
+    ).audios
     sf.write(str(out), audio[0].T.float().cpu().numpy(), pipe.vae.sampling_rate)
     return str(out)
 
@@ -197,8 +272,13 @@ def musicgen(p: GenParams, out: Path, progress: Progress | None, vram_gb: float)
     if p.seed >= 0:
         torch.manual_seed(p.seed)
     inputs = proc(text=[p.prompt], padding=True, return_tensors="pt").to(dev)
-    wav = model.generate(**inputs, do_sample=True, guidance_scale=p.guidance or 3.0, temperature=p.temperature,
-                         max_new_tokens=int(min(p.duration_s, 30) * 50))
+    wav = model.generate(
+        **inputs,
+        do_sample=True,
+        guidance_scale=p.guidance or 3.0,
+        temperature=p.temperature,
+        max_new_tokens=int(min(p.duration_s, 30) * 50),
+    )
     sf.write(str(out), wav[0, 0].cpu().numpy(), model.config.audio_encoder.sampling_rate)
     return str(out)
 
@@ -209,10 +289,16 @@ def audioldm2(p: GenParams, out: Path, progress: Progress | None, vram_gb: float
     from diffusers import AudioLDM2Pipeline  # type: ignore
 
     dev = "cuda" if torch.cuda.is_available() else "cpu"
-    pipe = AudioLDM2Pipeline.from_pretrained("cvssp/audioldm2-music",
-                                             torch_dtype=torch.float16 if dev == "cuda" else torch.float32).to(dev)
-    audio = pipe(p.prompt, num_inference_steps=p.steps or 200, audio_length_in_s=min(p.duration_s, 30),
-                 guidance_scale=p.guidance or 3.5, generator=_seed(p)).audios[0]
+    pipe = AudioLDM2Pipeline.from_pretrained(
+        "cvssp/audioldm2-music", torch_dtype=torch.float16 if dev == "cuda" else torch.float32
+    ).to(dev)
+    audio = pipe(
+        p.prompt,
+        num_inference_steps=p.steps or 200,
+        audio_length_in_s=min(p.duration_s, 30),
+        guidance_scale=p.guidance or 3.5,
+        generator=_seed(p),
+    ).audios[0]
     sf.write(str(out), audio, 16000)
     return str(out)
 

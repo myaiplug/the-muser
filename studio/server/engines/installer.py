@@ -12,8 +12,8 @@ import os
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from . import registry
 from .errors import FriendlyError
@@ -48,7 +48,9 @@ def plan(key: str) -> list[list[str]]:
     if ins.kind in ("repo", "app"):
         target = Path(registry.MODELS_DIR) / key
         if not shutil.which("git"):
-            raise FriendlyError("Git is needed to install this model.", "Install Git for Windows, then try again.")
+            raise FriendlyError(
+                "Git is needed to install this model.", "Install Git for Windows, then try again."
+            )
         cmds.append(["git", "clone", "--depth", "1", ins.repo, str(target)])
         if ins.kind == "repo":
             venv = target / ".venv"
@@ -97,14 +99,19 @@ def install(key: str, log: Log = print, dry_run: bool = False) -> dict:
         emit("$ " + " ".join(cmd))
         if dry_run:
             continue
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+        )
         assert proc.stdout is not None
         for line in proc.stdout:
             line = line.rstrip()
             if line:
                 emit(line[-300:])
         if proc.wait() != 0:
-            raise FriendlyError(f"Installing {spec.name} failed.", "See the install log in System. Your Studio still works without it.")
+            raise FriendlyError(
+                f"Installing {spec.name} failed.",
+                "See the install log in System. Your Studio still works without it.",
+            )
     importlib_invalidate()
     if spec.install.prefetch and not dry_run:
         try:
@@ -115,7 +122,12 @@ def install(key: str, log: Log = print, dry_run: bool = False) -> dict:
         emit("Note: " + step)
     h = registry.health(spec) if not dry_run else {"installed": False, "detail": "dry run"}
     emit(h["detail"])
-    return {"engine": key, "installed": bool(h["installed"]), "dry_run": dry_run, "log": lines[-200:]}
+    return {
+        "engine": key,
+        "installed": bool(h["installed"]),
+        "dry_run": dry_run,
+        "log": lines[-200:],
+    }
 
 
 def importlib_invalidate() -> None:

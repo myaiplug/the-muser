@@ -21,7 +21,11 @@ def deepfilternet(x: np.ndarray, sr: int, strength: float = 1.0) -> np.ndarray:
     dsr = state.sr()
     y = audio_io.resample(x, sr, dsr)
     atten = None if strength >= 1 else float(6 + 54 * strength)  # dB limit for gentler settings
-    out = enhance(model, state, torch.from_numpy(np.ascontiguousarray(y.T)), atten_lim_db=atten).numpy().T
+    out = (
+        enhance(model, state, torch.from_numpy(np.ascontiguousarray(y.T)), atten_lim_db=atten)
+        .numpy()
+        .T
+    )
     out = audio_io.resample(out.astype(np.float32), dsr, sr)
     n = min(len(out), len(x))
     res = x.copy()
@@ -32,11 +36,15 @@ def deepfilternet(x: np.ndarray, sr: int, strength: float = 1.0) -> np.ndarray:
 def noisereduce(x: np.ndarray, sr: int, strength: float = 1.0) -> np.ndarray:
     import noisereduce as nr  # type: ignore
 
-    y = nr.reduce_noise(y=x.T, sr=sr, prop_decrease=float(np.clip(strength, 0.05, 1.0)), stationary=False)
+    y = nr.reduce_noise(
+        y=x.T, sr=sr, prop_decrease=float(np.clip(strength, 0.05, 1.0)), stationary=False
+    )
     return np.asarray(y, dtype=np.float32).T.reshape(x.shape)
 
 
-def clean(x: np.ndarray, sr: int, engine: str = "auto", strength: float = 0.8) -> tuple[np.ndarray, str]:
+def clean(
+    x: np.ndarray, sr: int, engine: str = "auto", strength: float = 0.8
+) -> tuple[np.ndarray, str]:
     from . import selector
 
     if engine == "auto":

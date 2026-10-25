@@ -142,7 +142,11 @@ def generate(req: GenerateRequest, job: Job | None = None) -> dict[str, Any]:
 
 
 def split(
-    track_id: str, mode: str = "4stem", job: Job | None = None, engine: str = "auto", model: str | None = None
+    track_id: str,
+    mode: str = "4stem",
+    job: Job | None = None,
+    engine: str = "auto",
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Split a track into stems.
 
@@ -165,7 +169,7 @@ def split(
         method = "demo-synth"
         note = "Stems are the demo synthesizer's own source tracks (exact, not separated)."
     elif engine != "auto" or not caps.demo_forced:
-        from .engines import separation, selector
+        from .engines import selector, separation
         from .engines.errors import FriendlyError
 
         chosen = engine
@@ -175,8 +179,12 @@ def split(
             except FriendlyError:
                 chosen = "band-split"
         if job:
-            job.message = f"Splitting with {chosen} (on CPU this can take about the length of the song)..."
-        res = separation.separate(t.path, out_dir, mode=mode, engine=chosen, model=model, progress=progress)
+            job.message = (
+                f"Splitting with {chosen} (on CPU this can take about the length of the song)..."
+            )
+        res = separation.separate(
+            t.path, out_dir, mode=mode, engine=chosen, model=model, progress=progress
+        )
         stems = res["stems"]
         method = res["engine"] if res["engine"] == "band-split" else f"{res['engine']}-{mode}"
         note = res["note"]

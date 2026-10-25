@@ -16,7 +16,21 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from . import engine, mixing, presets
-from .engines import audio_io, cleanup, fx, generation, hardware, installer, loudness, mastering, reference, registry, selector, separation, transcribe
+from .engines import (
+    audio_io,
+    cleanup,
+    fx,
+    generation,
+    hardware,
+    installer,
+    loudness,
+    mastering,
+    reference,
+    registry,
+    selector,
+    separation,
+    transcribe,
+)
 from .engines.errors import FriendlyError
 from .store import DATA_DIR, EXPORTS_DIR, Job, Track, file_url, jobs, probe_duration, tracks
 
@@ -41,6 +55,8 @@ def _friendly(fn, *a, **kw):
         return fn(*a, **kw)
     except FriendlyError as e:
         raise HTTPException(400, str(e)) from e
+    except KeyError as e:
+        raise HTTPException(404, str(e).strip("'\"")) from e
 
 
 # --------------------------------------------------------------------------- engines
@@ -49,7 +65,11 @@ def _friendly(fn, *a, **kw):
 @router.get("/hardware")
 def get_hardware(refresh: bool = False) -> dict:
     hw = hardware.detect(force=refresh)
-    return {"hardware": hw.to_dict(), "tier": hw.tier(), "recommendations": selector.recommendations(hw)}
+    return {
+        "hardware": hw.to_dict(),
+        "tier": hw.tier(),
+        "recommendations": selector.recommendations(hw),
+    }
 
 
 @router.get("/engines")
@@ -64,9 +84,21 @@ def list_engines(commercial_only: bool = True) -> dict:
     for task in registry.TASKS:
         try:
             c = selector.select(task, hw, commercial_only=commercial_only)
-            picks[task] = {"engine": c.engine, "name": c.name, "reasons": c.reasons, "alternatives": c.alternatives, "upgrades": c.upgrades}
+            picks[task] = {
+                "engine": c.engine,
+                "name": c.name,
+                "reasons": c.reasons,
+                "alternatives": c.alternatives,
+                "upgrades": c.upgrades,
+            }
         except FriendlyError as e:
-            picks[task] = {"engine": None, "name": None, "reasons": [str(e)], "alternatives": [], "upgrades": []}
+            picks[task] = {
+                "engine": None,
+                "name": None,
+                "reasons": [str(e)],
+                "alternatives": [],
+                "upgrades": [],
+            }
     return {"engines": out, "tasks": registry.TASKS, "selected": picks}
 
 
@@ -101,16 +133,32 @@ def fx_plugins() -> dict:
 
 @router.get("/mastering/targets")
 def master_targets() -> dict:
-    return {"targets": {k: {"label": v.label, "lufs": v.lufs, "true_peak_db": v.true_peak_db, "easy": v.easy, "note": v.note}
-                        for k, v in mastering.TARGETS.items()}}
+    return {
+        "targets": {
+            k: {
+                "label": v.label,
+                "lufs": v.lufs,
+                "true_peak_db": v.true_peak_db,
+                "easy": v.easy,
+                "note": v.note,
+            }
+            for k, v in mastering.TARGETS.items()
+        }
+    }
 
 
 # --------------------------------------------------------------------------- presets
 
 
 @router.get("/presets")
-def list_presets(category: str | None = None, q: str | None = None, favorites: bool = False) -> dict:
-    return {"presets": presets.listing(category, q, favorites), "counts": presets.counts(), "categories": presets.CATEGORIES}
+def list_presets(
+    category: str | None = None, q: str | None = None, favorites: bool = False
+) -> dict:
+    return {
+        "presets": presets.listing(category, q, favorites),
+        "counts": presets.counts(),
+        "categories": presets.CATEGORIES,
+    }
 
 
 @router.get("/presets/macros")
@@ -121,7 +169,9 @@ def get_macros() -> dict:
 @router.get("/presets/export")
 def export_presets(ids: str = "") -> JSONResponse:
     bundle = presets.export_bundle([i for i in ids.split(",") if i] or None)
-    return JSONResponse(bundle, headers={"Content-Disposition": 'attachment; filename="muser-presets.json"'})
+    return JSONResponse(
+        bundle, headers={"Content-Disposition": 'attachment; filename="muser-presets.json"'}
+    )
 
 
 @router.get("/presets/{pid:path}/item")
@@ -173,7 +223,9 @@ def preview_preset(req: PreviewRequest) -> dict:
         elif req.preset_id:
             p = presets.get(req.preset_id)
             if p["category"] == "genre":
-                chain = presets.chain_of(p.get("master")) if isinstance(p.get("master"), str) else []
+                chain = (
+                    presets.chain_of(p.get("master")) if isinstance(p.get("master"), str) else []
+                )
             else:
                 chain = presets.chain_of(req.preset_id)
         else:
@@ -217,15 +269,33 @@ def _preview_source(track_id: str | None, stem_id: str | None, preset_id: str | 
 def vibes() -> dict:
     tiles = [p for p in presets.listing("genre") if p.get("easy")]
     targets = master_targets()["targets"]
-    return {"vibes": tiles, "sliders": presets.macros()["sliders"], "finish": {k: v for k, v in targets.items() if v["easy"]}}
+    return {
+        "vibes": tiles,
+        "sliders": presets.macros()["sliders"],
+        "finish": {k: v for k, v in targets.items() if v["easy"]},
+    }
 
 
 def match_vibe(text: str) -> str:
     words = set(re.findall(r"[a-z0-9]+", text.lower()))
     best, best_score = "genre/pop", 0.0
     for p in presets.listing("genre"):
-        hay = set(re.findall(r"[a-z0-9]+", " ".join([p["name"], " ".join(p.get("tags", [])), p.get("description", ""), p["generate"]["prompt"]]).lower()))
-        name = set(re.findall(r"[a-z0-9]+", (p["name"] + " " + " ".join(p.get("tags", []))).lower()))
+        hay = set(
+            re.findall(
+                r"[a-z0-9]+",
+                " ".join(
+                    [
+                        p["name"],
+                        " ".join(p.get("tags", [])),
+                        p.get("description", ""),
+                        p["generate"]["prompt"],
+                    ]
+                ).lower(),
+            )
+        )
+        name = set(
+            re.findall(r"[a-z0-9]+", (p["name"] + " " + " ".join(p.get("tags", []))).lower())
+        )
         score = len(words & hay) + 2 * len(words & name)
         if score > best_score:
             best, best_score = p["id"], score
@@ -255,9 +325,16 @@ def easy_make(req: EasyMake) -> dict:
         gen = g["generate"]
         prompt = f"{req.vibe.strip()}, {gen['prompt']}" if req.vibe.strip() else gen["prompt"]
         job.message = f"Writing a {g['name']} track..."
-        res = engine.generate(engine.GenerateRequest(prompt=prompt[:2000], lyrics=req.lyrics or gen.get("lyrics", ""),
-                                                     duration_s=req.duration_s or gen.get("duration_s", 30),
-                                                     bpm=gen.get("bpm"), title=f"{g['name']} idea"), job)
+        res = engine.generate(
+            engine.GenerateRequest(
+                prompt=prompt[:2000],
+                lyrics=req.lyrics or gen.get("lyrics", ""),
+                duration_s=req.duration_s or gen.get("duration_s", 30),
+                bpm=gen.get("bpm"),
+                title=f"{g['name']} idea",
+            ),
+            job,
+        )
         root_id = res["track"]["id"]
         root = tracks.get(root_id)
         if root:
@@ -268,10 +345,19 @@ def easy_make(req: EasyMake) -> dict:
             engine.split(root_id, "4stem", job)
         except Exception as e:  # sliders still work on the full mix
             job.message = f"Stems unavailable ({e}); shaping the full mix instead."
-        macros = {k: (getattr(req, k) if getattr(req, k) is not None else g["macros"][k]) for k in ("energy", "vocals", "bass", "brightness", "space")}
+        macros = {
+            k: (getattr(req, k) if getattr(req, k) is not None else g["macros"][k])
+            for k in ("energy", "vocals", "bass", "brightness", "space")
+        }
         job.message = "Mixing with your vibe..."
         out = mixing.easy_render(mixing.EasyRender(track_id=root_id, genre_id=gid, **macros), job)
-        return {**out, "root_id": root_id, "genre_id": gid, "macros": macros, "engine": res.get("engine")}
+        return {
+            **out,
+            "root_id": root_id,
+            "genre_id": gid,
+            "macros": macros,
+            "engine": res.get("engine"),
+        }
 
     return _job("easy-make", run)
 
@@ -303,7 +389,9 @@ class ToolRequest(BaseModel):
     amount: float = Field(1.0, ge=0, le=1)
 
 
-def _child_from_file(parent: Track, src: str | Path, title: str, source: str, notes: str, meta: dict) -> Track:
+def _child_from_file(
+    parent: Track, src: str | Path, title: str, source: str, notes: str, meta: dict
+) -> Track:
     x, sr = audio_io.read(str(src))
     return mixing.new_child(parent, x, sr, title, source, notes, meta)
 
@@ -321,10 +409,19 @@ def tool_remove_vocals(req: ToolRequest, job: Job) -> dict:
         except FriendlyError:
             eng = "band-split"
     if eng == "band-split":
-        raise FriendlyError("Removing vocals needs a real separator.", "Open System and press Install on Audio Separator (about 1 minute).")
+        raise FriendlyError(
+            "Removing vocals needs a real separator.",
+            "Open System and press Install on Audio Separator (about 1 minute).",
+        )
     job.message = f"Removing vocals with {eng}..."
-    res = separation.separate(t.path, Path(t.path).parent / f"karaoke_{int(time.time())}", mode="2stem", engine=eng, model=req.model,
-                              progress=lambda m: setattr(job, "message", m))
+    res = separation.separate(
+        t.path,
+        Path(t.path).parent / f"karaoke_{int(time.time())}",
+        mode="2stem",
+        engine=eng,
+        model=req.model,
+        progress=lambda m: setattr(job, "message", m),
+    )
     voc, rest = separation.vocals_and_instrumental(res["stems"])
     if not rest:
         raise FriendlyError("The separator didn't return an instrumental.")
@@ -334,7 +431,14 @@ def tool_remove_vocals(req: ToolRequest, job: Job) -> dict:
         out, sr, _ = mixing.render([{"path": p} for p in rest], [])
         src = Path(rest[0]).with_name("instrumental_sum.wav")
         audio_io.write(src, out, sr)
-    child = _child_from_file(t, src, f"{t.title} (instrumental)", "instrumental", res["note"], {"tool": "remove_vocals", "engine": res["engine"], "model": res["model"]})
+    child = _child_from_file(
+        t,
+        src,
+        f"{t.title} (instrumental)",
+        "instrumental",
+        res["note"],
+        {"tool": "remove_vocals", "engine": res["engine"], "model": res["model"]},
+    )
     if voc:
         child.meta["vocals_url"] = file_url(voc)
         tracks.save(child)
@@ -346,7 +450,15 @@ def tool_denoise(req: ToolRequest, job: Job) -> dict:
     job.message = "Cleaning up noise..."
     x, sr = audio_io.read(t.path)
     y, eng = cleanup.clean(x, sr, engine=req.engine, strength=req.strength)
-    child = mixing.new_child(t, y, sr, f"{t.title} (clean)", "denoise", f"Noise reduced with {eng}.", {"tool": "denoise", "engine": eng})
+    child = mixing.new_child(
+        t,
+        y,
+        sr,
+        f"{t.title} (clean)",
+        "denoise",
+        f"Noise reduced with {eng}.",
+        {"tool": "denoise", "engine": eng},
+    )
     return {"track": child.to_public(), "engine": eng}
 
 
@@ -358,7 +470,14 @@ def tool_match(req: ToolRequest, job: Job) -> dict:
     job.message = "Matching tone and loudness to your reference..."
     out = Path(t.path).parent / f"matched_{int(time.time())}.wav"
     eng = reference.match(t.path, r.path, str(out), engine=req.engine, amount=req.amount)
-    child = _child_from_file(t, out, f"{t.title} (matched to {r.title})", "match", f"Matched to '{r.title}' with {eng}.", {"tool": "match", "engine": eng, "reference": r.id})
+    child = _child_from_file(
+        t,
+        out,
+        f"{t.title} (matched to {r.title})",
+        "match",
+        f"Matched to '{r.title}' with {eng}.",
+        {"tool": "match", "engine": eng, "reference": r.id},
+    )
     return {"track": child.to_public(), "engine": eng}
 
 
@@ -367,7 +486,9 @@ def tool_midi(req: ToolRequest, job: Job) -> dict:
     job.message = "Listening for notes..."
     src = t.path
     if t.stems:  # prefer a melodic stem
-        mel = next((s for s in t.stems if mixing.role_for(s.name) in ("lead", "vocals", "keys")), None)
+        mel = next(
+            (s for s in t.stems if mixing.role_for(s.name) in ("lead", "vocals", "keys")), None
+        )
         src = mel.path if mel else src
     out = EXPORTS_DIR / t.id / f"{t.id}.mid"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -375,7 +496,13 @@ def tool_midi(req: ToolRequest, job: Job) -> dict:
     return {"midi_url": file_url(out), **{k: v for k, v in res.items() if k != "path"}}
 
 
-TOOLS = {"split": tool_split, "remove_vocals": tool_remove_vocals, "denoise": tool_denoise, "match": tool_match, "midi": tool_midi}
+TOOLS = {
+    "split": tool_split,
+    "remove_vocals": tool_remove_vocals,
+    "denoise": tool_denoise,
+    "match": tool_match,
+    "midi": tool_midi,
+}
 
 
 @router.post("/tools/{name}")
@@ -412,18 +539,47 @@ class AdvancedGenerate(BaseModel):
 def advanced_generate(req: AdvancedGenerate) -> dict:
     def run(job: Job) -> dict:
         if req.engine in ("auto", "acestep", "demo-synth"):
-            return engine.generate(engine.GenerateRequest(prompt=req.prompt, lyrics=req.lyrics, duration_s=min(req.duration_s, 240),
-                                                          bpm=req.bpm, title=req.title, force_demo=req.engine == "demo-synth"), job)
+            return engine.generate(
+                engine.GenerateRequest(
+                    prompt=req.prompt,
+                    lyrics=req.lyrics,
+                    duration_s=min(req.duration_s, 240),
+                    bpm=req.bpm,
+                    title=req.title,
+                    force_demo=req.engine == "demo-synth",
+                ),
+                job,
+            )
         spec = registry.get(req.engine)
         if not registry.health(spec)["installed"]:
-            raise FriendlyError(f"{spec.name} is not installed yet.", "Open System and press Install.")
+            raise FriendlyError(
+                f"{spec.name} is not installed yet.", "Open System and press Install."
+            )
         tid, tdir = tracks.new_dir()
-        params = generation.GenParams(prompt=req.prompt, lyrics=req.lyrics, duration_s=req.duration_s, steps=req.steps,
-                                      guidance=req.guidance, seed=req.seed, temperature=req.temperature)
-        path = generation.run(req.engine, params, tdir / "mix.wav", progress=lambda m: setattr(job, "message", m))
-        t = Track(id=tid, title=req.title or f"{spec.name} - {req.prompt[:40]}", source=req.engine, path=str(path),
-                  created=time.time(), prompt=req.prompt, bpm=req.bpm, duration_s=probe_duration(path),
-                  notes=f"Generated with {spec.name}. Licence: {spec.weights_license}.", meta={"gen": req.model_dump()})
+        params = generation.GenParams(
+            prompt=req.prompt,
+            lyrics=req.lyrics,
+            duration_s=req.duration_s,
+            steps=req.steps,
+            guidance=req.guidance,
+            seed=req.seed,
+            temperature=req.temperature,
+        )
+        path = generation.run(
+            req.engine, params, tdir / "mix.wav", progress=lambda m: setattr(job, "message", m)
+        )
+        t = Track(
+            id=tid,
+            title=req.title or f"{spec.name} - {req.prompt[:40]}",
+            source=req.engine,
+            path=str(path),
+            created=time.time(),
+            prompt=req.prompt,
+            bpm=req.bpm,
+            duration_s=probe_duration(path),
+            notes=f"Generated with {spec.name}. Licence: {spec.weights_license}.",
+            meta={"gen": req.model_dump()},
+        )
         return {"track": tracks.save(t).to_public(), "engine": req.engine}
 
     return _job("generate", run)
@@ -431,7 +587,13 @@ def advanced_generate(req: AdvancedGenerate) -> dict:
 
 @router.get("/separation/models")
 def separation_models() -> dict:
-    return {"models": separation.MODELS, "default": {"2stem": separation.default_model("2stem"), "4stem": separation.default_model("4stem")}}
+    return {
+        "models": separation.MODELS,
+        "default": {
+            "2stem": separation.default_model("2stem"),
+            "4stem": separation.default_model("4stem"),
+        },
+    }
 
 
 @router.get("/tracks/{tid}/analysis")

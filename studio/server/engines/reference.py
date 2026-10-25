@@ -25,7 +25,9 @@ def builtin(x: np.ndarray, ref: np.ndarray, sr: int, amount: float = 1.0) -> np.
     return dsp.true_peak_limit(y, sr, ceiling_db=-1.0)
 
 
-def match(target: str, reference: str, out_path: str, engine: str = "auto", amount: float = 1.0) -> str:
+def match(
+    target: str, reference: str, out_path: str, engine: str = "auto", amount: float = 1.0
+) -> str:
     from . import selector
 
     if engine == "auto":

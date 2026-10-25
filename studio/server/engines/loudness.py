@@ -20,7 +20,9 @@ def _k_weight_coeffs(sr: int) -> list[tuple[np.ndarray, np.ndarray]]:
     Vh = 10 ** (G / 20)
     Vb = Vh**0.4996667741545416
     a0 = 1 + K / Q + K * K
-    b1 = np.array([(Vh + Vb * K / Q + K * K) / a0, 2 * (K * K - Vh) / a0, (Vh - Vb * K / Q + K * K) / a0])
+    b1 = np.array(
+        [(Vh + Vb * K / Q + K * K) / a0, 2 * (K * K - Vh) / a0, (Vh - Vb * K / Q + K * K) / a0]
+    )
     a1 = np.array([1.0, 2 * (K * K - 1) / a0, (1 - K / Q + K * K) / a0])
     Q2, fc2 = 0.5003270373238773, 38.13547087602444
     K2 = math.tan(math.pi * fc2 / sr)
