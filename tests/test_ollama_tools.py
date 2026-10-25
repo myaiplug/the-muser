@@ -2,6 +2,8 @@
 
 from ollama import chat
 
+from src.orchestrator.config import OLLAMA_MODEL
+
 # Define a simple test tool
 tools = [
     {
@@ -32,7 +34,7 @@ messages = [
 ]
 
 response = chat(
-    model="qwen3:30b-a3b",
+    model=OLLAMA_MODEL,
     messages=messages,
     tools=tools,
     options={
