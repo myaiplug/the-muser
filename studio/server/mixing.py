@@ -277,10 +277,13 @@ def advanced_render(req: AdvancedRender, job: Job | None = None) -> dict[str, An
         by_id = {s.id: s for s in t.stems}
         any_solo = any(s.solo for s in req.stems)
         sources = []
-        for s in req.stems:
-            if s.stem_id not in by_id or s.mute or (any_solo and not s.solo):
+        for i, s in enumerate(req.stems):
+            st = by_id.get(s.stem_id)
+            if st is None and len(req.stems) == len(t.stems):
+                # stems were replaced (for example re-split) while the request was in flight: match by position
+                st = t.stems[i]
+            if st is None or s.mute or (any_solo and not s.solo):
                 continue
-            st = by_id[s.stem_id]
             sources.append({"name": st.name, "path": st.path, "chain": fx.normalize_chain(s.chain), "gain_db": s.gain_db, "pan": s.pan})
     except ValueError as e:
         raise FriendlyError(f"A setting is out of range: {e}") from e

@@ -87,6 +87,23 @@ def finish(
             break
         gain_db += err * (1.0 if err < 0 else 1.15)  # limiting eats loudness: push a bit more on the way up
         gain_db = min(gain_db, 30.0)
+    # 3) dense targets (club, CD) on very dynamic material: the limiter alone saturates,
+    #    so add gentle soft-clip drive before it until the goal is reached
+    drive_db = 0.0
+    if goal - measured > TOLERANCE_LU:
+        lin_ceiling = dsp.db2lin(ceiling)
+        for _ in range(10):
+            drive_db += max(1.0, (goal - measured) * 1.5)
+            pre_clip = y * dsp.db2lin(gain_db)
+            k = dsp.db2lin(drive_db)
+            clipped = np.tanh(pre_clip * k / lin_ceiling) * lin_ceiling / np.tanh(k)
+            out = dsp.true_peak_limit(clipped, sr, ceiling_db=ceiling, release_ms=limiter_release)
+            measured = integrated_lufs(out, sr)
+            if goal - measured <= TOLERANCE_LU * 0.6:
+                break
+        if measured > goal + TOLERANCE_LU:
+            out = dsp.true_peak_limit(out * dsp.db2lin(goal - measured), sr, ceiling_db=ceiling, release_ms=limiter_release)
+            measured = integrated_lufs(out, sr)
     tp = true_peak_db(out, sr)
     report = {
         "target": asdict(t),
@@ -98,5 +115,6 @@ def finish(
         "within_tolerance": abs(measured - goal) <= TOLERANCE_LU and tp <= ceiling + 0.05,
         "fx_engine": engine,
         "gain_db": round(gain_db, 2),
+        "drive_db": round(drive_db, 2),
     }
     return out.astype(np.float32), report
