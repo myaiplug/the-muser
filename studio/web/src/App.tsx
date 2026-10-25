@@ -7,8 +7,10 @@ import { ExportDialog, SystemDrawer, Toasts, type Toast } from './components/Dia
 import { Library } from './components/Library'
 import { Mixer, type Channel } from './components/Mixer'
 import { TopBar } from './components/TopBar'
+import { EasyStudio, type EasySession } from './components/easy/EasyStudio'
+import { ProPanel } from './components/pro/ProPanel'
 import { useHistory } from './state/history'
-import { DEFAULT_STEM, type Project, type Status, type Track } from './types'
+import { DEFAULT_STEM, type Mode, type Project, type Status, type Track } from './types'
 
 const INITIAL: Project = {
   mixer: {},
@@ -43,6 +45,20 @@ export default function App() {
   const [showExport, setShowExport] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   const toastId = useRef(0)
+  const [mode, setModeState] = useState<Mode>(() => (localStorage.getItem('muser.mode') === 'advanced' ? 'advanced' : 'easy'))
+  const setMode = (m: Mode) => {
+    localStorage.setItem('muser.mode', m)
+    setModeState(m)
+  }
+  const [easySession, setEasySession] = useState<EasySession | null | undefined>(undefined)
+  const saveTimer = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    api.session().then((r) => setEasySession((r.easy as EasySession) ?? null)).catch(() => setEasySession(null))
+  }, [])
+  const onEasySession = useCallback((s: EasySession) => {
+    window.clearTimeout(saveTimer.current)
+    saveTimer.current = window.setTimeout(() => void api.saveSession({ easy: s }).catch(() => undefined), 600)
+  }, [])
 
   const toast = useCallback((text: string, kind: Toast['kind'] = 'info') => {
     const id = ++toastId.current
@@ -200,7 +216,7 @@ export default function App() {
   return (
     <div className="app">
       <div className="bg-glow" />
-      <TopBar status={status} history={history} onOpenSystem={() => setShowSystem(true)} />
+      <TopBar status={status} history={history} onOpenSystem={() => setShowSystem(true)} mode={mode} onMode={setMode} />
       {apiDown && (
         <div className="banner">
           Studio API unreachable. Start it with <code>start_studio.bat</code> (Windows) or <code>python -m studio.server</code>.
@@ -212,6 +228,22 @@ export default function App() {
           <button className="link" onClick={() => setShowSystem(true)}>What's missing?</button>
         </div>
       )}
+      {mode === 'easy' ? (
+        <main className="easy-wrap">
+          {easySession !== undefined && (
+            <EasyStudio
+              toast={toast}
+              initial={easySession}
+              onSession={onEasySession}
+              onTrack={(t) => setTracks((xs) => (xs.some((x) => x.id === t.id) ? xs : [t, ...xs]))}
+              onOpenAdvanced={(t) => {
+                if (t) loadTrack(t)
+                setMode('advanced')
+              }}
+            />
+          )}
+        </main>
+      ) : (
       <main className="grid">
         <div className="col-left">
           <Composer status={status} onTrack={(t) => loadTrack(t)} onGenerate={onGenerate} generating={generating} />
@@ -252,13 +284,15 @@ export default function App() {
             onRender={onRender}
             onExport={() => setShowExport(true)}
           />
+          <ProPanel track={current} tracks={tracks} toast={toast} onTrack={loadTrack} />
           <Deck history={history} />
         </div>
       </main>
+      )}
       <footer className="foot">
         NoDAW Labs Studio front end · built on <a href="https://github.com/noah-chelednik/the-muser" target="_blank" rel="noreferrer">The Muser</a> (MIT)
       </footer>
-      {showSystem && <SystemDrawer status={status} onClose={() => setShowSystem(false)} onRefresh={() => void refreshStatus(true)} />}
+      {showSystem && <SystemDrawer status={status} onClose={() => setShowSystem(false)} onRefresh={() => void refreshStatus(true)} toast={toast} />}
       {showExport && current && <ExportDialog track={current} onClose={() => setShowExport(false)} onExport={onExport} />}
       <Toasts toasts={toasts} />
     </div>

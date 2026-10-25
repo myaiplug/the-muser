@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { audio } from '../audio/engine'
 import type { History } from '../state/history'
-import type { Project, Status } from '../types'
+import type { Mode, Project, Status } from '../types'
 import { Knob } from './Knob'
 import { Meter } from './Meter'
 
@@ -9,6 +9,8 @@ type Props = {
   status: Status | null
   history: History<Project>
   onOpenSystem: () => void
+  mode: Mode
+  onMode: (m: Mode) => void
 }
 
 const LED_KEYS: [string, string][] = [
@@ -37,13 +39,13 @@ function Lcd() {
   return <span ref={ref} className="lcd">00:00.00</span>
 }
 
-export function TopBar({ status, history, onOpenSystem }: Props) {
+export function TopBar({ status, history, onOpenSystem, mode, onMode }: Props) {
   const [, force] = useState(0)
   useEffect(() => audio.subscribe(() => force((x) => x + 1)), [])
   const [showHist, setShowHist] = useState(false)
 
   return (
-    <header className="topbar">
+    <header className={`topbar mode-${mode}`}>
       <div className="brand">
         <svg className="logo" viewBox="0 0 40 40" aria-hidden>
           <defs>
@@ -61,6 +63,12 @@ export function TopBar({ status, history, onOpenSystem }: Props) {
         </div>
       </div>
 
+      <div className="mode-toggle" role="tablist" aria-label="Studio mode">
+        <button role="tab" aria-selected={mode === 'easy'} className={mode === 'easy' ? 'on' : ''} onClick={() => onMode('easy')}>Easy</button>
+        <button role="tab" aria-selected={mode === 'advanced'} className={mode === 'advanced' ? 'on' : ''} onClick={() => onMode('advanced')}>Advanced</button>
+      </div>
+
+      {mode === 'advanced' && (
       <div className="transport">
         <button className="tbtn" onClick={() => audio.stop()} title="Stop (return to start)" aria-label="Stop">■</button>
         <button
@@ -91,7 +99,9 @@ export function TopBar({ status, history, onOpenSystem }: Props) {
           )}
         </div>
       </div>
+      )}
 
+      {mode === 'advanced' && (
       <div className="master">
         <Knob
           label="Master"
@@ -109,6 +119,7 @@ export function TopBar({ status, history, onOpenSystem }: Props) {
         />
         <Meter getAnalyser={() => audio.masterAnalyser} segments={16} />
       </div>
+      )}
 
       <button className="leds" onClick={onOpenSystem} title="System status">
         {LED_KEYS.map(([k, label]) => {

@@ -13,6 +13,8 @@ const browser = await chromium.launch({
   args: ['--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream'],
 })
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 })
+// this script drives the Advanced layout; Easy mode has its own script (ui_smoke_v2.mjs)
+await page.addInitScript(() => localStorage.setItem('muser.mode', 'advanced'))
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
 page.on('pageerror', (e) => errors.push(String(e)))
 
@@ -155,6 +157,7 @@ await page.screenshot({ path: `${OUT}/09-full-page.png`, fullPage: true })
 // responsive: tablet + phone
 for (const [name, w, h] of [['10-tablet', 900, 1200], ['11-mobile', 390, 844]]) {
   const p = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: name.includes('mobile'), hasTouch: true })
+  await p.addInitScript(() => localStorage.setItem('muser.mode', 'advanced'))
   await p.goto(BASE, { waitUntil: 'networkidle' })
   await p.locator('.lib-item').first().click()
   await p.waitForSelector('.lane')

@@ -21,7 +21,7 @@ export type StemInfo = { id: string; name: string; path: string; url: string; co
 export type Track = {
   id: string
   title: string
-  source: 'demo-synth' | 'acestep' | 'upload' | 'agent' | 'mixdown'
+  source: string
   url: string
   created: number
   prompt: string
@@ -32,6 +32,7 @@ export type Track = {
   stem_method: string
   notes: string
   parent_id: string
+  meta?: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export type Job<T = unknown> = {
@@ -41,6 +42,7 @@ export type Job<T = unknown> = {
   message: string
   result: T | null
   error: string
+  detail?: string
 }
 
 export type StemParams = {
@@ -97,3 +99,65 @@ export type ChatItem =
   | { kind: 'tool'; name: string; status: 'running' | 'success' | 'error'; detail?: string }
   | { kind: 'track'; track: Track }
   | { kind: 'error'; text: string }
+
+// ---------------------------------------------------------------- v2 (all-in-one)
+
+export type Mode = 'easy' | 'advanced'
+
+export type FxItem = { type: string; params: Record<string, number>; bypass?: boolean }
+export type PluginParam = { min: number; max: number; default: number; unit?: string; label?: string; step?: number }
+export type PluginSpec = { label: string; group?: string; params: Record<string, PluginParam> }
+
+export type Preset = {
+  id: string
+  name: string
+  category: 'genre' | 'mix' | 'master' | 'vocal' | 'fx'
+  subcategory?: string
+  tags: string[]
+  description: string
+  factory?: boolean
+  favorite?: boolean
+  user?: boolean
+  role?: string
+  easy?: boolean
+  icon?: string
+  chain?: FxItem[]
+  master?: { target: string; chain: FxItem[]; release_ms?: number } | string | null
+  generate?: { prompt: string; bpm: number; duration_s: number; lyrics: string }
+  stems?: Record<string, string | FxItem[]>
+  macros?: Record<MacroKey, number>
+}
+
+export type MacroKey = 'energy' | 'vocals' | 'bass' | 'brightness' | 'space'
+export type Slider = { key: MacroKey; label: string; help: string; low?: string; high?: string }
+export type FinishTarget = { label: string; lufs: number; true_peak_db: number; easy: boolean; note: string }
+
+export type EngineInfo = {
+  key: string
+  name: string
+  tasks: string[]
+  summary: string
+  homepage: string
+  code_license: string
+  weights_license: string
+  commercial: 'yes' | 'conditional' | 'no'
+  commercial_note: string
+  tier: 'builtin' | 'core' | 'optional' | 'heavy'
+  min_vram_gb: number
+  cpu_ok: boolean
+  windows: string
+  verified: 'working' | 'adapter'
+  untested_here: boolean
+  gpl_note?: string
+  archived?: boolean
+  install: { kind: string; download_gb?: number }
+  health: { installed: boolean; detail: string; [k: string]: unknown }
+  fits: boolean
+  fit_reason: string
+}
+
+export type EnginePick = { engine: string | null; name: string | null; reasons: string[]; alternatives: { key: string; name: string }[]; upgrades: { key: string; name: string; detail: string }[] }
+
+export type Hardware = { hardware: { os: string; cpu_count: number; ram_gb: number; gpu: string; vram_gb: number; cuda: boolean; notes: string[] }; tier: string; recommendations: { key: string; name: string; can_run: boolean; reason: string; commercial: string; min_vram_gb: number }[] }
+
+export type Analysis = { lufs: number | null; true_peak_db: number; peak_db: number; rms_db: number; duration_s: number; sample_rate: number; channels: number }

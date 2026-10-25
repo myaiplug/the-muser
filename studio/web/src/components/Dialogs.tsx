@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import type { Status, Track } from '../types'
+import { EnginesPanel } from './EnginesPanel'
 
-export function SystemDrawer({ status, onClose, onRefresh }: { status: Status | null; onClose: () => void; onRefresh: () => void }) {
+export function SystemDrawer({ status, onClose, onRefresh, toast }: { status: Status | null; onClose: () => void; onRefresh: () => void; toast?: (t: string, k?: 'info' | 'error' | 'ok') => void }) {
+  const [tab, setTab] = useState<'engines' | 'system'>('engines')
   return (
     <div className="overlay" onClick={onClose}>
       <aside className="drawer" onClick={(e) => e.stopPropagation()}>
@@ -12,7 +14,11 @@ export function SystemDrawer({ status, onClose, onRefresh }: { status: Status | 
             <button className="icon-btn" onClick={onClose} aria-label="Close">×</button>
           </div>
         </div>
-        {!status ? (
+        <div className="tabs drawer-tabs">
+          <button className={tab === 'engines' ? 'on' : ''} onClick={() => setTab('engines')}>Engines</button>
+          <button className={tab === 'system' ? 'on' : ''} onClick={() => setTab('system')}>System</button>
+        </div>
+        {tab === 'engines' ? <EnginesPanel toast={toast} /> : !status ? (
           <p className="muted">Connecting to the Studio API...</p>
         ) : (
           <>
@@ -27,7 +33,7 @@ export function SystemDrawer({ status, onClose, onRefresh }: { status: Status | 
                 <div>
                   <strong>{it.label}</strong>
                   <div className="sys-detail">{it.detail}</div>
-                  {!it.available && it.hint && <div className="sys-hint">→ {it.hint}</div>}
+                  {!it.available && it.hint && <div className="sys-hint">{it.hint}</div>}
                 </div>
               </div>
             ))}
