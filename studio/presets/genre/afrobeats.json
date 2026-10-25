@@ -1,0 +1,35 @@
+{
+  "id": "genre/afrobeats",
+  "name": "Afrobeats",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "afrobeats",
+    "dance"
+  ],
+  "description": "Bouncy, sunny groove.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "sun",
+  "generate": {
+    "prompt": "afrobeats groove, log drums, house influenced percussion, sunny",
+    "bpm": 108,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/four-on-the-floor",
+    "bass": "mix/tight-bass",
+    "keys": "mix/house-stabs",
+    "lead": "mix/bright-lead"
+  },
+  "master": "master/pop-master",
+  "macros": {
+    "energy": 65,
+    "vocals": 65,
+    "bass": 60,
+    "brightness": 60,
+    "space": 45
+  }
+}

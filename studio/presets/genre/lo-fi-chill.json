@@ -1,0 +1,35 @@
+{
+  "id": "genre/lo-fi-chill",
+  "name": "Lo-fi Chill",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "lofi",
+    "chill"
+  ],
+  "description": "Mellow beats to study to.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "moon",
+  "generate": {
+    "prompt": "lofi hip hop beat, dusty vinyl, mellow rhodes, rainy night",
+    "bpm": 78,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/dusty-drums",
+    "bass": "mix/warm-bass",
+    "keys": "mix/tape-keys",
+    "lead": "mix/soft-melody"
+  },
+  "master": "master/lo-fi-master",
+  "macros": {
+    "energy": 35,
+    "vocals": 40,
+    "bass": 55,
+    "brightness": 30,
+    "space": 60
+  }
+}

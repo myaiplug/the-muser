@@ -1,0 +1,35 @@
+{
+  "id": "genre/indie-folk",
+  "name": "Indie Folk",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "indie",
+    "folk"
+  ],
+  "description": "Warm and acoustic.",
+  "version": 1,
+  "factory": true,
+  "easy": false,
+  "icon": "leaf",
+  "generate": {
+    "prompt": "indie folk rock, acoustic guitar, warm and intimate",
+    "bpm": 100,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/brushed-jazz",
+    "bass": "mix/upright-bass",
+    "keys": "mix/clean-strum",
+    "lead": "mix/clean-strum"
+  },
+  "master": "master/acoustic-master",
+  "macros": {
+    "energy": 40,
+    "vocals": 70,
+    "bass": 45,
+    "brightness": 55,
+    "space": 50
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "genre/metal",
+  "name": "Metal",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "metal",
+    "rock"
+  ],
+  "description": "Down-tuned and heavy.",
+  "version": 1,
+  "factory": true,
+  "easy": false,
+  "icon": "horns",
+  "generate": {
+    "prompt": "heavy metal rock, down tuned riffs, double kick",
+    "bpm": 150,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/crushed-drums",
+    "bass": "mix/growl-bass",
+    "keys": "mix/crunch-guitar",
+    "lead": "mix/crunch-guitar"
+  },
+  "master": "master/metal-master",
+  "macros": {
+    "energy": 95,
+    "vocals": 55,
+    "bass": 60,
+    "brightness": 55,
+    "space": 25
+  }
+}

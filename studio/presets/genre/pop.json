@@ -1,0 +1,34 @@
+{
+  "id": "genre/pop",
+  "name": "Pop",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "pop"
+  ],
+  "description": "Radio-ready and catchy.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "star",
+  "generate": {
+    "prompt": "upbeat pop song, catchy hook, bright synths",
+    "bpm": 115,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/punchy-drums",
+    "bass": "mix/tight-bass",
+    "keys": "mix/clean-piano",
+    "lead": "mix/bright-lead"
+  },
+  "master": "master/pop-master",
+  "macros": {
+    "energy": 65,
+    "vocals": 70,
+    "bass": 55,
+    "brightness": 65,
+    "space": 45
+  }
+}

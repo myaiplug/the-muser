@@ -1,0 +1,35 @@
+{
+  "id": "genre/synthwave",
+  "name": "Synthwave",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "synthwave",
+    "80s"
+  ],
+  "description": "Neon 80s night drive.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "sunset",
+  "generate": {
+    "prompt": "synthwave, retro 80s, neon night drive, gated drums",
+    "bpm": 105,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/punchy-drums",
+    "bass": "mix/retro-synth-bass",
+    "keys": "mix/lush-keys",
+    "lead": "mix/retro-lead"
+  },
+  "master": "master/pop-master",
+  "macros": {
+    "energy": 60,
+    "vocals": 50,
+    "bass": 55,
+    "brightness": 60,
+    "space": 70
+  }
+}

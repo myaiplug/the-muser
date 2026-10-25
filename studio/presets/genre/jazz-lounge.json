@@ -1,0 +1,35 @@
+{
+  "id": "genre/jazz-lounge",
+  "name": "Jazz Lounge",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "jazz",
+    "lounge"
+  ],
+  "description": "Late night jazz club.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "sax",
+  "generate": {
+    "prompt": "smooth jazz lounge, brushed drums, upright bass, piano trio",
+    "bpm": 96,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/brushed-jazz",
+    "bass": "mix/upright-bass",
+    "keys": "mix/clean-piano",
+    "lead": "mix/soft-melody"
+  },
+  "master": "master/acoustic-master",
+  "macros": {
+    "energy": 35,
+    "vocals": 55,
+    "bass": 45,
+    "brightness": 50,
+    "space": 55
+  }
+}

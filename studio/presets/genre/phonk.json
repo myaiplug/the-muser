@@ -1,0 +1,35 @@
+{
+  "id": "genre/phonk",
+  "name": "Phonk",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "phonk",
+    "trap"
+  ],
+  "description": "Cowbells and distorted 808s.",
+  "version": 1,
+  "factory": true,
+  "easy": false,
+  "icon": "car",
+  "generate": {
+    "prompt": "phonk, cowbell melody, distorted 808, memphis trap drums",
+    "bpm": 130,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/crushed-drums",
+    "bass": "mix/808-weight",
+    "keys": "mix/tape-keys",
+    "lead": "mix/dark-lead"
+  },
+  "master": "master/drill-master",
+  "macros": {
+    "energy": 80,
+    "vocals": 30,
+    "bass": 80,
+    "brightness": 45,
+    "space": 35
+  }
+}

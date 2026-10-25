@@ -1,0 +1,35 @@
+{
+  "id": "genre/rock",
+  "name": "Rock",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "rock",
+    "band"
+  ],
+  "description": "Guitars up, drums loud.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "guitar",
+  "generate": {
+    "prompt": "energetic rock, driving guitars, live drums",
+    "bpm": 120,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/live-rock-kit",
+    "bass": "mix/tight-bass",
+    "keys": "mix/crunch-guitar",
+    "lead": "mix/crunch-guitar"
+  },
+  "master": "master/rock-master",
+  "macros": {
+    "energy": 75,
+    "vocals": 60,
+    "bass": 55,
+    "brightness": 55,
+    "space": 35
+  }
+}

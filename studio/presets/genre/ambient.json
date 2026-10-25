@@ -1,0 +1,35 @@
+{
+  "id": "genre/ambient",
+  "name": "Ambient",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "ambient",
+    "calm"
+  ],
+  "description": "Floating, calm textures.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "cloud",
+  "generate": {
+    "prompt": "ambient soundscape, slow evolving pads, calm",
+    "bpm": 70,
+    "duration_s": 40,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/brushed-jazz",
+    "bass": "mix/warm-bass",
+    "keys": "mix/lush-keys",
+    "lead": "mix/soft-melody"
+  },
+  "master": "master/cinematic-master",
+  "macros": {
+    "energy": 15,
+    "vocals": 30,
+    "bass": 35,
+    "brightness": 45,
+    "space": 90
+  }
+}

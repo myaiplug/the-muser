@@ -1,0 +1,35 @@
+{
+  "id": "genre/house",
+  "name": "House",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "house",
+    "dance"
+  ],
+  "description": "Warm dance floor groove.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "disco",
+  "generate": {
+    "prompt": "deep house groove, warm chords, four on the floor",
+    "bpm": 124,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/four-on-the-floor",
+    "bass": "mix/tight-bass",
+    "keys": "mix/house-stabs",
+    "lead": "mix/bright-lead"
+  },
+  "master": "master/techno-master",
+  "macros": {
+    "energy": 65,
+    "vocals": 45,
+    "bass": 60,
+    "brightness": 55,
+    "space": 50
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "genre/r-b-slow-jam",
+  "name": "R&B Slow Jam",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "rnb",
+    "soul"
+  ],
+  "description": "Silky late night R&B.",
+  "version": 1,
+  "factory": true,
+  "easy": true,
+  "icon": "rose",
+  "generate": {
+    "prompt": "smooth rnb slow jam, lush chords, soft hip hop drums",
+    "bpm": 72,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/dusty-drums",
+    "bass": "mix/warm-bass",
+    "keys": "mix/lush-keys",
+    "lead": "mix/soft-melody"
+  },
+  "master": "master/r-b-master",
+  "macros": {
+    "energy": 40,
+    "vocals": 70,
+    "bass": 60,
+    "brightness": 50,
+    "space": 60
+  }
+}

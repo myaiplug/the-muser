@@ -1,0 +1,35 @@
+{
+  "id": "genre/dubstep",
+  "name": "Dubstep",
+  "category": "genre",
+  "subcategory": "starter",
+  "tags": [
+    "dubstep",
+    "edm"
+  ],
+  "description": "Wobbles and half-time weight.",
+  "version": 1,
+  "factory": true,
+  "easy": false,
+  "icon": "speaker",
+  "generate": {
+    "prompt": "heavy dubstep edm, wobble bass, half time drums",
+    "bpm": 140,
+    "duration_s": 30,
+    "lyrics": ""
+  },
+  "stems": {
+    "drums": "mix/crushed-drums",
+    "bass": "mix/growl-bass",
+    "keys": "mix/lush-keys",
+    "lead": "mix/dark-lead"
+  },
+  "master": "master/edm-master",
+  "macros": {
+    "energy": 90,
+    "vocals": 30,
+    "bass": 85,
+    "brightness": 55,
+    "space": 40
+  }
+}
