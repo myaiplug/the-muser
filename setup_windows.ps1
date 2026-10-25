@@ -176,7 +176,13 @@ if (Has 'nvidia-smi') {
   if ($gpu) {
     Ok "NVIDIA GPU: $gpu"
     $mib = [int](($gpu -split ',')[1] -replace '[^0-9]', '')
-    if ($mib -lt 23000) { Warn "Less than 24 GB VRAM: ACE-Step v1.5 may not fit. Try MUSER_ACESTEP_VERSION=v1 or CPU offload." }
+    if ($mib -lt 7000) { Warn "Under 8 GB VRAM: the Studio uses CPU-friendly tools; only small GPU models are offered." }
+    elseif ($mib -lt 12000) {
+      Ok "8 to 12 GB card: the Studio picks low-memory settings automatically (ACE-Step 1.5 turbo + 0.6B LM, offload, INT8)."
+      Warn "Not recommended for this card: YuE (24 GB), SongGeneration (10 GB+), the original 24 GB full pipeline. The Engines panel marks them."
+    }
+    elseif ($mib -lt 20000) { Ok "12 to 20 GB card: most models fit; ACE-Step 1.5 runs with the 1.7B LM." }
+    else { Ok "20 GB+ card: every model fits at full quality." }
     if (-not $Gpu) { Warn "Re-run with -Gpu to install CUDA PyTorch + model extras." }
   }
 } else {

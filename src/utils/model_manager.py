@@ -328,7 +328,9 @@ class ModelManager:
             checkpoint_dir = str(ACESTEP_DIR) if has_local_weights else None
 
             device_id = -1 if use_cpu else 0
-            dtype = "float32" if use_cpu else "bfloat16"
+            # RTX 20 series (Turing) and older have no native bfloat16: use fp16.
+            bf16_ok = (not use_cpu) and torch.cuda.get_device_capability(0)[0] >= 8
+            dtype = "float32" if use_cpu else ("bfloat16" if bf16_ok else "float16")
 
             logger.info(
                 "Initialising ACE-Step pipeline (checkpoint_dir=%s, "

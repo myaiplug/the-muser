@@ -54,7 +54,7 @@ def verdict(spec: registry.EngineSpec, hw: hardware.Hardware) -> dict[str, Any]:
     if best is None:
         smallest = min(wired, key=lambda p: p.vram_gb)
         if smallest.vram_gb <= hw.vram_gb + 0.05:
-            reason = f"tight: needs about {smallest.vram_gb:g} GB ({smallest.how}) on a {hw.vram_gb:g} GB card"
+            reason = f"needs about {smallest.vram_gb:g} GB ({smallest.how}) on your {hw.vram_gb:g} GB card"
             return _v("tight", "Tight fit", reason, smallest, False, caveat)
         unwired = [p for p in profiles if not p.wired and p.vram_gb <= hw.vram_gb + 0.05]
         reason = f"needs {smallest.vram_gb:g} GB of GPU memory (you have {hw.vram_gb:g} GB)"
@@ -64,7 +64,7 @@ def verdict(spec: registry.EngineSpec, hw: hardware.Hardware) -> dict[str, Any]:
             return _v("cpu", "CPU (slow)", reason + ", runs on CPU instead", None, False, caveat)
         return _v("too-big", "Not recommended for your card", reason, smallest, False, caveat)
     if spec.key in TIGHT_DESPITE_SPEC and hw.vram_gb < TIGHT_DESPITE_SPEC[spec.key]:
-        reason = f"tight: {caveat}"
+        reason = caveat
         return _v("tight", "Tight fit", reason, best, False, caveat)
     if best.quality == "full":
         return _v(
@@ -265,7 +265,38 @@ def recommendations(hw: hardware.Hardware | None = None) -> list[dict[str, Any]]
                 "_order": order.get(v["status"], 3),
             }
         )
+    rec.append(_full_pipeline_row(hw, order))
     rec.sort(key=lambda r: (r["_order"], -COMMERCIAL_RANK[r["commercial"]], r["min_vram_gb"]))
     for r in rec:
         r.pop("_order")
     return rec
+
+
+def _full_pipeline_row(hw: hardware.Hardware, order: dict[str, int]) -> dict[str, Any]:
+    """The original Muser full-quality pipeline (ACE-Step sft + 1.7B LM, NotaGen, voices)."""
+    if hw.usable_vram_gb >= 20:
+        status, label, reason = "fits", "Fits", "your card runs the original full-quality pipeline"
+    else:
+        status, label = "too-big", "Not recommended for your card"
+        reason = (
+            "the original full-quality pipeline wants about 24 GB; the Studio runs ACE-Step 1.5 "
+            "with its low-memory profile instead"
+            if hw.has_gpu
+            else "needs a 24 GB NVIDIA GPU"
+        )
+    return {
+        "key": "full-pipeline-24gb",
+        "name": "Full pipeline (24 GB)",
+        "tasks": ["generate"],
+        "can_run": status == "fits",
+        "status": status,
+        "label": label,
+        "reason": reason,
+        "profile": None,
+        "caveat": "",
+        "commercial": "yes",
+        "min_vram_gb": 20.0,
+        "vram_full_gb": 24.0,
+        "windows": "native",
+        "_order": order[status],
+    }

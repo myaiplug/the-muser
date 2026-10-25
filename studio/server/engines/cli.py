@@ -37,13 +37,36 @@ def cmd_hardware(_: argparse.Namespace) -> int:
         print(f"  GPU: {d['gpu']} ({d['vram_gb']:.0f} GB VRAM)   tier: {d['tier']}")
     else:
         print("  GPU: none detected   tier: cpu (all Easy mode tools still work)")
+    if hw.compute_cap:
+        print(
+            f"  Compute capability: {hw.compute_cap}   bf16: {'yes' if hw.bf16 else 'no (fp16 used)'}"
+        )
+    for n in hw.notes:
+        print(f"  Note: {n}")
     print("\n  Heavy AI models for this PC (install from Studio > Engines):")
+    marks = {
+        "fits": "[ YES ]",
+        "fits-reduced": "[ YES ]",
+        "cpu": "[ cpu ]",
+        "tight": "[tight]",
+        "too-big": "[ no  ]",
+        "no-gpu": "[ no  ]",
+    }
     for r in selector.recommendations(hw):
-        mark = "[ YES ]" if r["can_run"] else "[ no  ]"
+        mark = marks.get(r["status"], "[ no  ]")
         lic = {"yes": "commercial OK", "conditional": "check license", "no": "non-commercial"}[
             r["commercial"]
         ]
-        print(f"   {mark} {r['name']:<28} {lic:<15} {r['reason']}")
+        need = (
+            f"{r['min_vram_gb']:g}-{r['vram_full_gb']:g} GB"
+            if r["vram_full_gb"] != r["min_vram_gb"]
+            else f"{r['min_vram_gb']:g} GB"
+        )
+        label = "" if r["status"] in ("fits", "fits-reduced") else f"{r['label']}: "
+        print(f"   {mark} {r['name']:<28} {need:<9} {lic:<15} {label}{r['reason']}")
+    print(
+        "\n  [ YES ] recommended   [tight] may run, close other GPU apps   [ no ] not recommended"
+    )
     return 0
 
 

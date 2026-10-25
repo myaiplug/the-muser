@@ -79,7 +79,8 @@ def _check_gpu() -> Capability:
             "NVIDIA GPU",
             False,
             "nvidia-smi not found - no NVIDIA GPU/driver detected. CPU can run LLM orchestration only.",
-            "Full pipeline wants an NVIDIA GPU with ~24 GB VRAM (RTX 3090/4090 class).",
+            "AI generation wants an NVIDIA GPU. 8 GB (RTX 2080 / 3060 Ti / 4060) runs ACE-Step 1.5 "
+            "with low-memory settings; 24 GB unlocks every model at full quality.",
         )
     try:
         out = subprocess.run(
