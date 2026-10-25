@@ -39,7 +39,7 @@ The Studio's auto-selector is commercial-safe by default: it only picks tools ma
 | DiffRhythm | Apache 2.0 | **YES** | |
 | AudioSR, Resemble Enhance | MIT | **YES** | |
 | Stable Audio Open | Stability AI Community License | **CONDITIONS** | Free under 1M USD yearly revenue |
-| YuE | Apache 2.0 (code), see model card | **CONDITIONS** | Individuals: attribution; companies need a license |
+| YuE | CC BY-NC 4.0 weights per model card, code Apache 2.0 | **CONDITIONS** | Individuals: attribution; companies need a license |
 | Applio (RVC), Seed-VC | MIT / GPL-3.0 | **CONDITIONS** | Get consent for any voice you clone |
 | MusicGen | CC BY-NC 4.0 weights | **NO** | Personal use only |
 | AudioLDM 2 | CC BY-NC-SA 4.0 weights | **NO** | Personal use only |

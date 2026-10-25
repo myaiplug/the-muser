@@ -142,6 +142,19 @@ await page.getByRole('button', { name: /Show heavy GPU models/ }).click()
 await page.waitForTimeout(300)
 log('engines incl heavy:', await page.locator('.eng-row').count())
 await page.locator('.drawer').screenshot({ path: `${OUT}/${P}14-engines-all.png` })
+const fit = page.locator('.fit-card')
+if (await fit.count()) {
+  await fit.first().scrollIntoViewIfNeeded()
+  await fit.first().screenshot({ path: `${OUT}/${P}16-engines-8gb-fit.png` })
+  log('fit list:', (await fit.first().innerText()).replace(/\s+/g, ' ').slice(0, 400))
+}
+const heavy = page.locator('.eng-row', { hasText: 'YuE' })
+if (await heavy.count()) {
+  await heavy.first().scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+  await page.locator('.drawer').screenshot({ path: `${OUT}/${P}17-engines-not-recommended.png` })
+  log('yue row:', (await heavy.first().innerText()).replace(/\s+/g, ' ').slice(0, 240))
+}
 await page.locator('.overlay').click({ position: { x: 5, y: 5 } })
 
 // ---- mobile Easy
