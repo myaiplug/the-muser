@@ -13,14 +13,33 @@
   Install Demucs (real stem separation) with CPU PyTorch. Ignored if -Gpu is given
   (the GPU install already includes it).
 
+.PARAMETER Separate
+  Also install audio-separator (best quality vocal and stem splitting, MIT models).
+
+.PARAMETER Denoise
+  Also install DeepFilterNet (AI noise and room removal for voice).
+
+.PARAMETER Extras
+  Install every optional engine (same as -Separate -Denoise plus Demucs).
+
+.PARAMETER SkipCore
+  Skip the core audio tools (Pedalboard, pyloudnorm, noisereduce, Basic Pitch,
+  Matchering). Not recommended: Easy mode falls back to simpler built in DSP.
+
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File setup_windows.ps1
+  powershell -ExecutionPolicy Bypass -File setup_windows.ps1 -Separate -Denoise
+  powershell -ExecutionPolicy Bypass -File setup_windows.ps1 -Extras
   powershell -ExecutionPolicy Bypass -File setup_windows.ps1 -Voice
   powershell -ExecutionPolicy Bypass -File setup_windows.ps1 -Gpu
 #>
 param(
   [switch]$Gpu,
-  [switch]$Voice
+  [switch]$Voice,
+  [switch]$Separate,
+  [switch]$Denoise,
+  [switch]$Extras,
+  [switch]$SkipCore
 )
 
 $ErrorActionPreference = 'Continue'
@@ -39,7 +58,7 @@ Say "  NoDAW Labs // THE MUSER STUDIO - Windows setup" 'Yellow'
 Say "  ------------------------------------------------" 'DarkYellow'
 
 # ---------------------------------------------------------------- Python
-Say "`n[1/5] Python" 'Cyan'
+Say "`n[1/7] Python" 'Cyan'
 $py = $null
 if (Has 'py') {
   foreach ($v in @('3.11', '3.12', '3.10')) {
@@ -68,7 +87,7 @@ $venvPy = "$Root\.venv\Scripts\python.exe"
 & $venvPy -m pip install --upgrade pip setuptools wheel --quiet
 
 # ---------------------------------------------------------------- Python deps
-Say "`n[2/5] Python packages" 'Cyan'
+Say "`n[2/7] Python packages" 'Cyan'
 if ($Gpu) {
   Say "  Installing CUDA PyTorch (cu121) - large download ..."
   & $venvPy -m pip install "torch==2.5.1" "torchaudio==2.5.1" --index-url https://download.pytorch.org/whl/cu121
@@ -83,10 +102,26 @@ if ($Gpu) {
 if ($LASTEXITCODE -ne 0) { Bad "pip install failed (see errors above)."; exit 1 }
 Ok "Python packages installed"
 
+# ---------------------------------------------------------------- Audio engines
+Say "`n[3/7] Audio tools (engines)" 'Cyan'
+$cli = @('-m', 'studio.server.engines.cli', 'install')
+if (-not $SkipCore) { $cli += '--core' }
+$ex = @()
+if ($Extras) { $ex += 'optional' }
+if ($Separate) { $ex += 'separate' }
+if ($Denoise) { $ex += 'denoise' }
+if ($ex.Count -gt 0) { $cli += @('--extras', ($ex -join ',')) }
+if ($cli.Count -gt 3) {
+  & $venvPy @cli
+  Ok "Audio tools checked (anything that failed can be retried from Studio > Engines)"
+} else {
+  Warn "Core audio tools skipped (-SkipCore). The built in DSP fallbacks will be used."
+}
+
 if (-not (Test-Path "$Root\.env")) { Copy-Item "$Root\.env.example" "$Root\.env"; Ok "Created .env from .env.example" }
 
 # ---------------------------------------------------------------- Node / web UI
-Say "`n[3/5] Studio web UI (Node.js)" 'Cyan'
+Say "`n[4/7] Studio web UI (Node.js)" 'Cyan'
 if (Has 'node') {
   $nodeVer = (& node --version).TrimStart('v')
   $parts = $nodeVer.Split('.') | ForEach-Object { [int]$_ }
@@ -109,7 +144,7 @@ if (Has 'node') {
 }
 
 # ---------------------------------------------------------------- System tools
-Say "`n[4/5] System tools" 'Cyan'
+Say "`n[5/7] System tools" 'Cyan'
 if (Has 'ffmpeg') { Ok "ffmpeg found" } else {
   Bad "ffmpeg not found - needed for effects, mixdown and export."
   $missing.Add('ffmpeg (winget install Gyan.FFmpeg)')
@@ -135,7 +170,7 @@ if (-not [Environment]::GetEnvironmentVariable('OLLAMA_CONTEXT_LENGTH', 'User'))
 }
 
 # ---------------------------------------------------------------- GPU
-Say "`n[5/5] GPU" 'Cyan'
+Say "`n[6/7] GPU" 'Cyan'
 if (Has 'nvidia-smi') {
   $gpu = & nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>$null
   if ($gpu) {
@@ -147,7 +182,10 @@ if (Has 'nvidia-smi') {
 } else {
   Warn "No NVIDIA GPU detected (nvidia-smi missing). CPU = LLM orchestration + demo audio only."
 }
-& $venvPy -c "import importlib.util as u; print('  [info] demucs installed:', bool(u.find_spec('demucs')))"
+
+# ---------------------------------------------------------------- Recommendation
+Say "`n[7/7] Hardware check and model recommendations" 'Cyan'
+& $venvPy -m studio.server.engines.cli hardware
 
 # ---------------------------------------------------------------- Summary
 Say "`n------------------------------------------------" 'DarkYellow'
@@ -157,5 +195,5 @@ else {
   $missing | ForEach-Object { Say "    - $_" 'Yellow' }
   Say "  The Studio still runs in DEMO mode. Launch with:  start_studio.bat" 'Green'
 }
-Say "  Model weights (ACE-Step etc.): see STUDIO_README.md -> 'Full pipeline'." 'Gray'
+Say "  Heavy AI models install with one click from Studio > Engines. Guide: STUDIO_README.md" 'Gray'
 Say ""

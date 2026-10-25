@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Launch The Muser Studio on Linux/macOS.  Usage: ./start_studio.sh [--demo] [--port 8765]
+# First run installs the core audio tools. Add extras with e.g. MUSER_EXTRAS=separate,denoise
 set -euo pipefail
 cd "$(dirname "$0")"
 if [ ! -x .venv/bin/python ]; then
   python3 -m venv .venv
   .venv/bin/pip install -U pip
   .venv/bin/pip install -e ".[web,studio]"
+  .venv/bin/python -m studio.server.engines.cli install --core ${MUSER_EXTRAS:+--extras "$MUSER_EXTRAS"}
+  .venv/bin/python -m studio.server.engines.cli hardware
 fi
 if [ ! -f studio/web/dist/index.html ]; then
   (cd studio/web && npm install --no-audit --no-fund && npm run build)

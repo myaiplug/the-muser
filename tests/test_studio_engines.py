@@ -415,3 +415,24 @@ def test_dsp_true_peak_limiter():
     x = _music() * 4.0
     y = dsp.true_peak_limit(x, SR, ceiling_db=-1.0)
     assert loudness.true_peak_db(y, SR) <= -0.95
+
+
+# ---------------------------------------------------------------- setup CLI
+
+
+def test_cli_hardware_and_status(capsys):
+    from studio.server.engines import cli
+
+    assert cli.main(["hardware"]) == 0
+    assert cli.main(["status"]) == 0
+    out = capsys.readouterr().out
+    assert "tier" in out and "demo-synth" in out
+
+
+def test_cli_extras_map_to_registry():
+    from studio.server.engines import cli, registry
+
+    keys = {s.key for s in registry.ENGINES}
+    for names in cli.EXTRAS.values():
+        assert set(names) <= keys
+    assert set(cli.core_keys()) == {s.key for s in registry.ENGINES if s.tier == "core"}

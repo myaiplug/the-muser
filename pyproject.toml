@@ -77,6 +77,23 @@ studio = [
     "httpx>=0.27",
     # recent litellm releases import `mcp` whenever tools are passed (agent tool calls)
     "mcp>=1.0",
+    # core audio tools (all commercial-safe output, CPU only)
+    "pedalboard>=0.9",
+    "pyloudnorm>=0.1",
+    "noisereduce>=3.0",
+    "matchering>=2.0",
+    "setuptools<81",
+]
+# Optional engines. Basic Pitch (MIDI) is best installed with
+#   python -m studio.server.engines.cli install --core
+# which skips TensorFlow and uses the bundled ONNX model.
+separate = [
+    "audio-separator[cpu]>=0.30",
+    "onnxruntime>=1.16",
+]
+denoise = [
+    "deepfilternet>=0.5",
+    "torchaudio<2.9",
 ]
 midi = [
     "basic-pitch>=0.3",
@@ -90,7 +107,7 @@ dev = [
     "pre-commit>=3.5,<4.0",
 ]
 all = [
-    "the-muser[gpu,anthropic,voice,web,studio,midi,dev]",
+    "the-muser[gpu,anthropic,voice,web,studio,separate,denoise,midi,dev]",
 ]
 
 [project.urls]
