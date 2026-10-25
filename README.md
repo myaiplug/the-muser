@@ -11,7 +11,7 @@ hardware.
 
 ```bash
 pip install -e "."
-ollama pull qwen3:30b-a3b
+ollama pull qwen3:30b-a3b          # 8 GB GPU? use qwen3:8b, see below
 bash scripts/setup_models.sh
 muser
 ```
@@ -65,7 +65,8 @@ See [docs/legal.md](docs/legal.md) for the full breakdown including optional com
 ### Prerequisites
 
 - Python 3.10+
-- NVIDIA GPU with 24GB VRAM (for full pipeline) or CPU-only (LLM orchestration)
+- NVIDIA GPU with 24GB VRAM (for full pipeline), an 8 GB GPU with the low-VRAM
+  profile ([see below](#8-gb-gpu-eg-rtx-2080-super)), or CPU-only (LLM orchestration)
 - [Ollama](https://ollama.com) for local LLM inference
 - ffmpeg, FluidSynth (for audio rendering)
 
@@ -88,6 +89,57 @@ docker-compose up muser-gpu    # GPU mode (requires NVIDIA Container Toolkit)
 docker-compose up muser-cpu    # CPU-only mode
 docker-compose up muser-web    # Web UI at http://localhost:7860
 ```
+
+### 8 GB GPU (e.g. RTX 2080 Super)
+
+The Muser picks a **hardware profile** at startup. `MUSER_HARDWARE_PROFILE=auto`
+(the default) reads total VRAM from `nvidia-smi` and uses `8gb` on cards under
+20 GB and `24gb` otherwise. With no detectable NVIDIA GPU it stays on `24gb`,
+the original behavior. You can force either one:
+
+```bash
+export MUSER_HARDWARE_PROFILE=8gb       # PowerShell: $env:MUSER_HARDWARE_PROFILE="8gb"
+ollama pull qwen3:8b                    # ~5.2 GB, instead of qwen3:30b-a3b (~19 GB)
+bash scripts/setup_models.sh            # also clones ACE-Step 1.5 into models/ace-step-v15
+```
+
+What the `8gb` profile changes (any individual `MUSER_*` variable still wins):
+
+| Setting | `24gb` (original) | `8gb` |
+|---|---|---|
+| ACE-Step 1.5 DiT | `acestep-v15-sft` | `acestep-v15-turbo` (2B) |
+| ACE-Step 5Hz LM | not loaded | `acestep-5Hz-lm-0.6B`, `pt` backend |
+| Offload / quantization | none | CPU offload (incl. DiT), INT8 weights |
+| ACE-Step v1.0 (if selected) | GPU | `cpu_offload=True` |
+| Ollama model | `qwen3:30b-a3b` | `qwen3:8b` |
+| Ollama in VRAM during generation | left loaded | unloaded first (`keep_alive: 0`) |
+| VRAM budgets | 22 GB ACE-Step 1.5, 8 GB NotaGen... | 3.5 GB ACE-Step 1.5, 6.5 GB NotaGen... |
+
+These follow the 6-8 GB tier in ACE-Step 1.5's
+[GPU compatibility guide](https://github.com/ace-step/ACE-Step-1.5/blob/main/docs/en/GPU_COMPATIBILITY.md):
+2B turbo DiT, 0.6B LM on the PyTorch backend, CPU + DiT offload, INT8.
+
+RTX 20-series (Turing) notes:
+
+- No native bfloat16, so the DiT runs in float16 (ACE-Step 1.5 picks this
+  itself) and the 5Hz LM runs in float32. `MUSER_ACESTEP_LM_DTYPE=float16`
+  saves about 1 GB, but some bf16-trained weights can produce NaNs in fp16.
+- FlashAttention 2 and FP8 need an RTX 30 or newer card, so both stay off.
+  `torch.compile` is off by default (`MUSER_ACESTEP_COMPILE=true` to try it).
+- INT8 needs `torchao` (ACE-Step 1.5 pins `>=0.16,<0.17`). Without it ACE-Step
+  logs "Quantization disabled" and loads unquantized fp16 weights, which may not fit. `MUSER_ACESTEP_QUANT=none`
+  turns it off on purpose.
+- Ollama and the music model cannot share 8 GB. The profile unloads Ollama
+  models before a GPU model loads, and they reload on the next chat turn. To keep
+  the LLM on the CPU instead, start Ollama with `CUDA_VISIBLE_DEVICES=-1 ollama serve`.
+- Close browsers, games and other GPU apps before generating.
+
+Other engines on 8 GB: DiffRhythm fits with chunked VAE decoding (`--chunked`,
+per its README; the Studio passes it automatically). YuE needs 24 GB+ and is not
+a default. The Studio has its own per-engine VRAM guide in
+[STUDIO_README.md](STUDIO_README.md).
+
+To go back to the original path on any card, set `MUSER_HARDWARE_PROFILE=24gb`.
 
 ## Usage
 
@@ -115,7 +167,7 @@ No paid API key required. The Muser routes to the best available provider:
 | Groq | 300+ tok/s | Free tier | Set `GROQ_API_KEY` |
 | Cerebras | 1000+ tok/s | Free tier | Set `CEREBRAS_API_KEY` |
 | Gemini | Fast | Free tier | Set `GOOGLE_API_KEY` |
-| Ollama (local) | 12-28 tok/s | Free forever | `ollama pull qwen3:30b-a3b` |
+| Ollama (local) | 12-28 tok/s | Free forever | `ollama pull qwen3:30b-a3b` (`qwen3:8b` on 8 GB GPUs) |
 
 ## Architecture
 
