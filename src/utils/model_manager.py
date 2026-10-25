@@ -22,17 +22,26 @@ module is cheap and safe in CPU-only environments.
 from __future__ import annotations
 
 import gc
+import json
 import logging
 import os
 import sys
+import urllib.request
 from typing import Any
 
 from src.orchestrator.config import (
     ACESTEP_DIR,
     ACESTEP_V15_DIR,
     ACESTEP_V15_DIT_MODEL,
+    ACESTEP_V15_INIT_LM,
+    ACESTEP_V15_LM_DTYPE,
+    ACESTEP_V15_LM_MODEL,
     DIFFSINGER_DIR,
+    HARDWARE_PROFILE,
+    LOW_VRAM,
     NOTAGEN_DIR,
+    OLLAMA_HOST,
+    OLLAMA_UNLOAD_BEFORE_GPU,
     VRAM_BUDGET,
 )
 
@@ -81,6 +90,58 @@ def _get_device(prefer_cpu: bool = False):
     if prefer_cpu or not torch.cuda.is_available():
         return torch.device("cpu")
     return torch.device("cuda")
+
+
+def unload_ollama_models(host: str | None = None, timeout: float = 5.0) -> list[str]:
+    """Ask a local Ollama server to evict every loaded model from VRAM.
+
+    Uses the documented ``GET /api/ps`` + ``POST /api/generate`` with
+    ``keep_alive: 0``.  The model reloads on the next chat turn.  Never raises:
+    if Ollama is not running this is a no-op.  Returns the names unloaded.
+    """
+    base = (host or OLLAMA_HOST).rstrip("/")
+    try:
+        with urllib.request.urlopen(f"{base}/api/ps", timeout=timeout) as resp:
+            loaded = json.loads(resp.read().decode("utf-8") or "{}").get("models") or []
+    except (OSError, ValueError) as exc:
+        logger.debug("Ollama not reachable at %s (%s); nothing to unload.", base, exc)
+        return []
+
+    unloaded: list[str] = []
+    for entry in loaded:
+        name = entry.get("model") or entry.get("name")
+        if not name:
+            continue
+        body = json.dumps({"model": name, "keep_alive": 0}).encode("utf-8")
+        req = urllib.request.Request(
+            f"{base}/api/generate",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                resp.read()
+            unloaded.append(name)
+        except (OSError, ValueError) as exc:
+            logger.warning("Could not unload Ollama model %s: %s", name, exc)
+    if unloaded:
+        logger.info("Unloaded Ollama model(s) from VRAM: %s", ", ".join(unloaded))
+    return unloaded
+
+
+def _lm_dtype(torch, on_cuda: bool):
+    """dtype for the ACE-Step 5Hz LM.
+
+    ``None`` lets upstream pick (bfloat16 on CUDA).  Turing and older GPUs
+    (compute capability < 8, e.g. RTX 2080 Super) have no native bf16, so use
+    float32 there.  ``MUSER_ACESTEP_LM_DTYPE`` overrides.
+    """
+    if ACESTEP_V15_LM_DTYPE:
+        return getattr(torch, ACESTEP_V15_LM_DTYPE.strip().lower(), None)
+    if on_cuda and torch.cuda.get_device_capability(0)[0] < 8:
+        return torch.float32
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +212,11 @@ class ModelManager:
         ``unload_current`` is called first.  If VRAM is *still* insufficient
         after unloading, ``RuntimeError`` is raised.
         """
+        if OLLAMA_UNLOAD_BEFORE_GPU:
+            # The agent's Ollama model (e.g. qwen3:8b, ~5 GB) would otherwise
+            # sit in VRAM next to the music model on small cards.
+            unload_ollama_models()
+
         free = self.get_vram_free_gb()
         logger.debug("VRAM check: %.2f GB free, %.2f GB required.", free, required_gb)
 
@@ -302,7 +368,8 @@ class ModelManager:
             return self._current_model
 
         torch = _import_torch(require_cuda=False)
-        use_cpu = cpu_offload or not torch.cuda.is_available()
+        # The 8gb hardware profile always uses ACE-Step's CPU offload (~8 GB peak).
+        use_cpu = cpu_offload or LOW_VRAM or not torch.cuda.is_available()
 
         if not use_cpu:
             required_gb = VRAM_BUDGET.get("acestep", 18.0)
@@ -386,9 +453,9 @@ class ModelManager:
 
         torch = _import_torch(require_cuda=False)
 
-        from src.utils.vram_profile import acestep_profile, cuda_total_vram_gb
+        from src.utils.vram_profile import acestep_profile_for, cuda_total_vram_gb
 
-        profile = acestep_profile(cuda_total_vram_gb())
+        profile = acestep_profile_for(HARDWARE_PROFILE, cuda_total_vram_gb())
         if torch.cuda.is_available():
             required_gb = min(VRAM_BUDGET.get("acestep_v15", 22.0), profile.budget_gb)
             self._check_vram(required_gb)
@@ -402,9 +469,16 @@ class ModelManager:
             from acestep.handler import AceStepHandler
             from acestep.llm_inference import LLMHandler
 
+            dit_model = (
+                ACESTEP_V15_DIT_MODEL
+                if profile.tier == "20gb+"
+                else os.environ.get("MUSER_ACESTEP_DIT_MODEL") or profile.dit_model
+            )
             logger.info(
-                "Initialising ACE-Step v1.5 (model=%s, project=%s)",
-                ACESTEP_V15_DIT_MODEL,
+                "Initialising ACE-Step v1.5 (hardware_profile=%s, tier=%s, model=%s, project=%s)",
+                HARDWARE_PROFILE,
+                profile.tier,
+                dit_model,
                 ACESTEP_V15_DIR,
             )
 
@@ -417,13 +491,12 @@ class ModelManager:
 
             kwargs = {
                 "project_root": str(ACESTEP_V15_DIR),
-                "config_path": os.environ.get("MUSER_ACESTEP_DIT_MODEL") or profile.dit_model
-                if profile.tier != "20gb+"
-                else ACESTEP_V15_DIT_MODEL,
+                "config_path": dit_model,
                 "device": "auto",
                 # FlashAttention 2 needs an Ampere (RTX 30) or newer GPU.
                 "use_flash_attention": False,
-                "compile_model": False,
+                # torch.compile needs Triton (painful on Windows); opt in only.
+                "compile_model": os.environ.get("MUSER_ACESTEP_COMPILE", "false").lower() == "true",
                 "offload_to_cpu": profile.offload_to_cpu or not torch.cuda.is_available(),
                 "offload_dit_to_cpu": profile.offload_dit_to_cpu,
                 "quantization": profile.quantization,
@@ -439,6 +512,9 @@ class ModelManager:
 
             logger.info("ACE-Step v1.5 initialised: %s", status)
 
+            if ACESTEP_V15_INIT_LM and profile.lm_model:
+                self._init_acestep_v15_lm(llm_handler, profile, torch)
+
             handlers = (dit_handler, llm_handler)
             self._current_model = handlers
             self._current_name = "acestep_v15"
@@ -452,6 +528,60 @@ class ModelManager:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
             raise RuntimeError(f"Failed to load ACE-Step v1.5: {exc}") from exc
+
+    def _init_acestep_v15_lm(self, llm_handler: Any, profile: Any, torch: Any) -> bool:
+        """Initialize the ACE-Step v1.5 5Hz LM; never fatal.
+
+        Without it ``generate_music`` runs DiT-only (the old Muser behavior),
+        so any failure is logged and generation continues without the LM.
+        """
+        import inspect
+
+        lm_model = (
+            ACESTEP_V15_LM_MODEL
+            if profile.tier == "20gb+"
+            else os.environ.get("MUSER_ACESTEP_LM_MODEL") or profile.lm_model
+        )
+        try:
+            try:
+                from acestep.model_downloader import ensure_lm_model, get_checkpoints_dir
+
+                checkpoint_dir = get_checkpoints_dir()
+                ok, msg = ensure_lm_model(lm_model, checkpoint_dir)
+                if not ok:
+                    logger.warning("ACE-Step LM %s unavailable: %s", lm_model, msg)
+                    return False
+            except ImportError:
+                checkpoint_dir = ACESTEP_V15_DIR / "checkpoints"
+
+            on_cuda = torch.cuda.is_available()
+            kwargs = {
+                "checkpoint_dir": str(checkpoint_dir),
+                "lm_model_path": lm_model,
+                # vLLM is not available on Windows and needs more VRAM; the
+                # upstream 6-8 GB tier uses the plain PyTorch ("pt") backend.
+                "backend": os.environ.get("MUSER_ACESTEP_LM_BACKEND") or profile.lm_backend,
+                "device": "auto",
+                "offload_to_cpu": profile.offload_to_cpu or not on_cuda,
+                "dtype": _lm_dtype(torch, on_cuda),
+            }
+            accepted = inspect.signature(llm_handler.initialize).parameters
+            if not any(p.kind == p.VAR_KEYWORD for p in accepted.values()):
+                kwargs = {k: v for k, v in kwargs.items() if k in accepted}
+            status, success = llm_handler.initialize(**kwargs)
+        except Exception as exc:
+            logger.warning("ACE-Step v1.5 LM init failed (%s); continuing DiT-only.", exc)
+            return False
+        if not success:
+            logger.warning("ACE-Step v1.5 LM init failed (%s); continuing DiT-only.", status)
+            return False
+        logger.info(
+            "ACE-Step v1.5 LM ready (%s, backend=%s, dtype=%s)",
+            lm_model,
+            kwargs.get("backend"),
+            kwargs.get("dtype"),
+        )
+        return True
 
     def load_diffsinger(
         self,

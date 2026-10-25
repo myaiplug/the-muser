@@ -20,6 +20,8 @@ from typing import Any
 
 import litellm
 
+from src.orchestrator.config import LOW_VRAM, OLLAMA_MODEL
+
 # Suppress LiteLLM's noisy logging
 litellm.suppress_debug_info = True
 litellm.set_verbose = False
@@ -66,15 +68,20 @@ PROVIDER_CHAIN = [
     "cerebras/llama-3.3-70b",
     # Google free tier
     "gemini/gemini-2.0-flash",
-    # Local unlimited fallback (always available)
-    "ollama_chat/qwen3:30b-a3b",
+    # Local unlimited fallback (always available). MUSER_OLLAMA_MODEL, default
+    # qwen3:30b-a3b on the 24gb profile and qwen3:8b on the 8gb profile.
+    f"ollama_chat/{OLLAMA_MODEL}",
 ]
 
-# Local-only chain (no cloud dependency)
-LOCAL_ONLY_CHAIN = [
-    "ollama_chat/qwen3:30b-a3b",
-    "ollama_chat/qwen3:8b",
-]
+# Local-only chain (no cloud dependency). The ~19 GB qwen3:30b-a3b is left out
+# on the 8gb hardware profile.
+LOCAL_ONLY_CHAIN = list(
+    dict.fromkeys(
+        [f"ollama_chat/{OLLAMA_MODEL}"]
+        + ([] if LOW_VRAM else ["ollama_chat/qwen3:30b-a3b"])
+        + ["ollama_chat/qwen3:8b"]
+    )
+)
 
 # Anthropic chain (paid, highest quality)
 ANTHROPIC_CHAIN = [

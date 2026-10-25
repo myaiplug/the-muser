@@ -7,6 +7,8 @@ API keys, model settings, and VRAM budgets.
 import os
 from pathlib import Path
 
+from src.utils.vram_profile import resolve_hardware_profile
+
 # ---------------------------------------------------------------------------
 # Root directories
 # ---------------------------------------------------------------------------
@@ -40,18 +42,44 @@ SONATINA_SSO_DIR = SOUNDFONTS_DIR / "sonatina-sso"
 VSCO_CE_DIR = SOUNDFONTS_DIR / "vsco-2-ce"
 
 # ---------------------------------------------------------------------------
+# Hardware profile — "8gb" (e.g. RTX 2080 Super) or "24gb" (original target)
+# ---------------------------------------------------------------------------
+# MUSER_HARDWARE_PROFILE = auto | 8gb | 24gb.  "auto" (default) picks "8gb" when
+# the detected card has under 20 GB of VRAM and "24gb" otherwise (or when no
+# NVIDIA GPU can be detected, which keeps the original behavior).  Individual
+# env vars below (MUSER_VRAM_GB, MUSER_OLLAMA_MODEL, MUSER_ACESTEP_*) still win.
+HARDWARE_PROFILE = resolve_hardware_profile()
+LOW_VRAM = HARDWARE_PROFILE == "8gb"
+
+# ---------------------------------------------------------------------------
 # VRAM budget (GB) — sequential loading, only one model at a time
 # ---------------------------------------------------------------------------
-VRAM_BUDGET = {
-    "notagen": 8.0,
-    "acestep": 18.0,
-    "acestep_v15": 22.0,
-    "diffsinger": 8.0,
-    "rvc": 6.0,
-    "demucs": 4.0,
-    "seedvc": 5.0,
+VRAM_BUDGET_PROFILES = {
+    "24gb": {
+        "notagen": 8.0,
+        "acestep": 18.0,
+        "acestep_v15": 22.0,
+        "diffsinger": 8.0,
+        "rvc": 6.0,
+        "demucs": 4.0,
+        "seedvc": 5.0,
+    },
+    # An 8 GB card reports ~7.6-8.0 GB total and ~7 GB free with a desktop
+    # running, so every budget must stay below that.  ACE-Step v1.5 is further
+    # capped by the upstream tier in src/utils/vram_profile.py (3.5 GB with
+    # CPU offload + INT8); v1.0 is loaded with cpu_offload on this profile.
+    "8gb": {
+        "notagen": 6.5,  # NotaGen-X README: "may require 8GB" — tight on 8 GB cards
+        "acestep": 6.0,
+        "acestep_v15": 6.0,
+        "diffsinger": 4.0,
+        "rvc": 4.0,
+        "demucs": 3.0,
+        "seedvc": 4.0,
+    },
 }
-TOTAL_VRAM_GB = float(os.environ.get("MUSER_VRAM_GB", "24"))
+VRAM_BUDGET = dict(VRAM_BUDGET_PROFILES[HARDWARE_PROFILE])
+TOTAL_VRAM_GB = float(os.environ.get("MUSER_VRAM_GB", "8" if LOW_VRAM else "24"))
 
 # ---------------------------------------------------------------------------
 # LLM Provider
@@ -70,7 +98,14 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")  # Gemini
 
 # Ollama (always available as fallback)
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("MUSER_OLLAMA_MODEL", "qwen3:30b-a3b")
+# qwen3:30b-a3b is ~19 GB; on the 8gb profile default to qwen3:8b (~5.2 GB).
+OLLAMA_MODEL = os.environ.get("MUSER_OLLAMA_MODEL", "qwen3:8b" if LOW_VRAM else "qwen3:30b-a3b")
+# Ask Ollama to drop its models from VRAM (keep_alive=0) before Muser loads a
+# GPU music/voice model.  An 8 GB card cannot hold qwen3:8b and ACE-Step at once.
+OLLAMA_UNLOAD_BEFORE_GPU = (
+    os.environ.get("MUSER_OLLAMA_UNLOAD_BEFORE_GPU", "true" if LOW_VRAM else "false").lower()
+    == "true"
+)
 
 # Legacy Claude model references (used when MUSER_LLM_MODE="anthropic")
 CLAUDE_MODEL_ROUTINE = os.environ.get("MUSER_CLAUDE_MODEL_ROUTINE", "claude-sonnet-4-5-20250929")
@@ -104,11 +139,27 @@ DIFFSINGER_TIMEOUT = int(os.environ.get("MUSER_DIFFSINGER_TIMEOUT", "300"))
 # ACE-Step v1.5 settings
 # ---------------------------------------------------------------------------
 ACESTEP_VERSION = os.environ.get("MUSER_ACESTEP_VERSION", "v15")
-ACESTEP_V15_DIT_MODEL = os.environ.get("MUSER_ACESTEP_DIT_MODEL", "acestep-v15-sft")
-ACESTEP_V15_LM_MODEL = os.environ.get("MUSER_ACESTEP_LM_MODEL", "acestep-5Hz-lm-1.7B")
+# 8gb profile: 2B turbo DiT + 0.6B LM on the "pt" backend (ACE-Step 1.5
+# README / docs/en/GPU_COMPATIBILITY.md, 6-8 GB tier).
+ACESTEP_V15_DIT_MODEL = os.environ.get(
+    "MUSER_ACESTEP_DIT_MODEL", "acestep-v15-turbo" if LOW_VRAM else "acestep-v15-sft"
+)
+ACESTEP_V15_LM_MODEL = os.environ.get(
+    "MUSER_ACESTEP_LM_MODEL", "acestep-5Hz-lm-0.6B" if LOW_VRAM else "acestep-5Hz-lm-1.7B"
+)
 ACESTEP_V15_LM_TEMPERATURE = float(os.environ.get("MUSER_ACESTEP_LM_TEMP", "0.85"))
 ACESTEP_V15_LM_CFG_SCALE = float(os.environ.get("MUSER_ACESTEP_LM_CFG", "2.0"))
+# Upstream allows batch 2 on the 6-8 GB tier and shrinks it itself if VRAM is short.
 ACESTEP_V15_BATCH_SIZE = int(os.environ.get("MUSER_ACESTEP_BATCH_SIZE", "2"))
+# Initialize the 5Hz LM so generate_music() can plan/"think" (default on for
+# the 8gb profile; off on 24gb, which keeps the previous DiT-only path). Failure is
+# non-fatal: generation falls back to DiT-only (the previous behavior).
+ACESTEP_V15_INIT_LM = (
+    os.environ.get("MUSER_ACESTEP_INIT_LM", "true" if LOW_VRAM else "false").lower() == "true"
+)
+# Turing (RTX 20xx) has no bf16; the LM defaults to fp32 there unless overridden
+# with MUSER_ACESTEP_LM_DTYPE=float16|bfloat16|float32.
+ACESTEP_V15_LM_DTYPE = os.environ.get("MUSER_ACESTEP_LM_DTYPE", "")
 ACESTEP_V15_THINKING_MODE = os.environ.get("MUSER_ACESTEP_THINKING", "true").lower() == "true"
 ACESTEP_V15_API_URL = os.environ.get("MUSER_ACESTEP_API_URL", "")
 ACESTEP_V15_API_KEY = os.environ.get("MUSER_ACESTEP_API_KEY", "")

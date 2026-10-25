@@ -11,11 +11,18 @@ Env vars always win: MUSER_ACESTEP_DIT_MODEL, MUSER_ACESTEP_LM_MODEL,
 MUSER_ACESTEP_OFFLOAD (true/false), MUSER_ACESTEP_OFFLOAD_DIT (true/false),
 MUSER_ACESTEP_QUANT (int8_weight_only, fp8_weight_only, none) and
 MUSER_ACESTEP_VRAM_BUDGET (GB checked before loading).
+
+On top of the per-card ACE-Step tiers there is a coarse Muser *hardware
+profile* (``MUSER_HARDWARE_PROFILE`` = ``auto`` | ``8gb`` | ``24gb``) that
+picks the defaults in ``src/orchestrator/config.py`` (VRAM budgets, Ollama
+model, ACE-Step DiT/LM).  ``auto`` detects VRAM without importing torch.
 """
 
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 from dataclasses import asdict, dataclass
 
 
@@ -132,3 +139,96 @@ def cuda_total_vram_gb() -> float:
     except Exception:
         pass
     return 0.0
+
+
+# ---------------------------------------------------------------------------
+# Muser hardware profile (8gb / 24gb)
+# ---------------------------------------------------------------------------
+
+HARDWARE_PROFILES = ("8gb", "24gb")
+
+# Cards below this much VRAM get the low-VRAM ("8gb") profile under ``auto``.
+LOW_VRAM_THRESHOLD_GB = 20.0
+
+
+def _float_env(name: str) -> float | None:
+    v = os.environ.get(name)
+    if v is None or v.strip() == "":
+        return None
+    try:
+        return float(v)
+    except ValueError:
+        return None
+
+
+def nvidia_smi_total_vram_gb(timeout: float = 5.0) -> float:
+    """Total VRAM of GPU 0 from ``nvidia-smi`` (0.0 if unavailable).
+
+    Used at config import time, so it must stay cheap and never import torch.
+    """
+    exe = shutil.which("nvidia-smi")
+    if not exe:
+        return 0.0
+    try:
+        out = subprocess.run(
+            [exe, "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+        if out.returncode != 0:
+            return 0.0
+        first = out.stdout.strip().splitlines()[0]
+        return float(first.strip()) / 1024.0  # MiB -> GiB
+    except (OSError, subprocess.SubprocessError, ValueError, IndexError):
+        return 0.0
+
+
+def detect_total_vram_gb() -> float:
+    """Best-effort total VRAM in GB without importing torch.
+
+    Order: ``MUSER_VRAM_GB`` (explicit), ``MUSER_FORCE_VRAM_GB`` (the Studio's
+    preview override), then ``nvidia-smi``.  Returns 0.0 if nothing is found.
+    """
+    for name in ("MUSER_VRAM_GB", "MUSER_FORCE_VRAM_GB"):
+        v = _float_env(name)
+        if v is not None:
+            return v
+    return nvidia_smi_total_vram_gb()
+
+
+def resolve_hardware_profile(value: str | None = None, vram_gb: float | None = None) -> str:
+    """Return ``"8gb"`` or ``"24gb"``.
+
+    *value* defaults to ``MUSER_HARDWARE_PROFILE`` (``auto`` when unset).
+    Under ``auto`` a detected card below 20 GB picks ``"8gb"``; 20 GB and up,
+    or no detectable NVIDIA GPU, keeps the original ``"24gb"`` behavior.
+    """
+    if value is None:
+        value = os.environ.get("MUSER_HARDWARE_PROFILE", "auto")
+    v = (value or "auto").strip().lower().replace(" ", "")
+    if v in ("8", "8g", "8gb", "low", "lowvram"):
+        return "8gb"
+    if v in ("24", "24g", "24gb", "high", "full"):
+        return "24gb"
+    gb = detect_total_vram_gb() if vram_gb is None else vram_gb
+    if 0 < gb < LOW_VRAM_THRESHOLD_GB:
+        return "8gb"
+    return "24gb"
+
+
+def acestep_profile_for(hardware_profile: str | None, total_vram_gb: float) -> AceStepProfile:
+    """ACE-Step tier honoring an explicitly chosen hardware profile.
+
+    With ``MUSER_HARDWARE_PROFILE=auto`` (or unset) the tier follows the real
+    card, exactly like :func:`acestep_profile`.  An explicit ``8gb`` caps the
+    tier at the 8 GB settings; an explicit ``24gb`` forces the full-quality
+    tier (the original Muser path) even on a smaller card.
+    """
+    explicit = os.environ.get("MUSER_HARDWARE_PROFILE", "auto").strip().lower()
+    if explicit in ("", "auto") or hardware_profile is None:
+        return acestep_profile(total_vram_gb)
+    if hardware_profile == "8gb":
+        return acestep_profile(min(total_vram_gb, 7.8) if total_vram_gb > 0 else 7.8)
+    return acestep_profile(max(total_vram_gb, 24.0))

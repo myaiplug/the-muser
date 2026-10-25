@@ -7,6 +7,8 @@ with chat, audio playback, composition status, and file management.
 import logging
 from pathlib import Path
 
+from src.orchestrator.config import OLLAMA_MODEL
+
 logger = logging.getLogger(__name__)
 
 
@@ -106,13 +108,19 @@ def create_app():
                 audio_player = gr.Audio(label="Latest Audio", type="filepath")
 
                 model_dropdown = gr.Dropdown(
-                    choices=[
-                        "ollama_chat/qwen3:30b-a3b",
-                        "groq/llama-3.3-70b-versatile",
-                        "cerebras/llama-3.3-70b",
-                        "gemini/gemini-2.0-flash",
-                    ],
-                    value="ollama_chat/qwen3:30b-a3b",
+                    choices=list(
+                        dict.fromkeys(
+                            [
+                                f"ollama_chat/{OLLAMA_MODEL}",
+                                "ollama_chat/qwen3:30b-a3b",
+                                "ollama_chat/qwen3:8b",
+                                "groq/llama-3.3-70b-versatile",
+                                "cerebras/llama-3.3-70b",
+                                "gemini/gemini-2.0-flash",
+                            ]
+                        )
+                    ),
+                    value=f"ollama_chat/{OLLAMA_MODEL}",
                     label="LLM Provider",
                 )
 

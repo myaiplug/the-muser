@@ -46,7 +46,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 2. ACE-Step v1.5 — Text-to-audio generation
+# 2. ACE-Step — Text-to-audio generation (v1.0 in ace-step, v1.5 in ace-step-v15)
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Cloning ACE-Step ---"
@@ -56,6 +56,20 @@ else
     echo "ACE-Step already cloned, pulling latest..."
     git -C "$MODELS_DIR/ace-step" pull
 fi
+
+# ACE-Step 1.5 is the default engine (MUSER_ACESTEP_VERSION=v15). Its DiT and
+# 5Hz LM checkpoints download from HuggingFace on first use into
+# models/ace-step-v15/checkpoints (or $ACESTEP_CHECKPOINTS_DIR).
+echo ""
+echo "--- Cloning ACE-Step 1.5 ---"
+if [ ! -d "$MODELS_DIR/ace-step-v15/.git" ]; then
+    git clone https://github.com/ace-step/ACE-Step-1.5.git "$MODELS_DIR/ace-step-v15"
+else
+    echo "ACE-Step 1.5 already cloned, pulling latest..."
+    git -C "$MODELS_DIR/ace-step-v15" pull
+fi
+echo "Note: install ACE-Step 1.5's Python deps into this venv (see its README)."
+echo "      INT8 weights on the 8gb profile need torchao (upstream pins >=0.16,<0.17)."
 
 # ---------------------------------------------------------------------------
 # 3. DiffSinger — Singing voice synthesis
