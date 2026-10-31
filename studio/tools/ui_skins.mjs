@@ -164,7 +164,7 @@ for (const skin of SKINS) {
     await page.locator(T('presets')).waitFor()
     ok((await page.locator(`${T('presets')} > *`).count()) >= 20, `${skin}: preset shelf`)
   } else {
-    for (const tab of ['Generate', 'Separate', 'Master', 'Presets', 'A/B', 'Chains']) {
+    for (const tab of ['Live FX', 'Split', 'Sampler', 'Generate', 'Master', 'Presets', 'A/B', 'Chains']) {
       await page.locator('[role=tab]', { hasText: tab }).first().click()
       await settle(250)
       ok((await page.locator('[role=tab][aria-selected=true]', { hasText: tab }).count()) >= 1, `${skin}: ${tab} tab opens`)
