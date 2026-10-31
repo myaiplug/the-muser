@@ -83,7 +83,7 @@ function Scope({ compact }: { compact?: boolean }) {
 
 function Title({ text, small }: { text: string; small?: boolean }) {
   return (
-    <h1 key={text} className={`cc-title ${small ? 'sm' : ''}`} aria-label={text}>
+    <h1 key={text} className={`cc-title ${small ? 'sm' : ''}`} aria-label={text} style={{ ['--n' as string]: Math.max(5, text.length) }}>
       {text.toUpperCase().split('').map((c, i) => (
         <span className="ch" key={i} aria-hidden style={{ ['--i' as string]: i }}>{c === ' ' ? '\u00A0' : c}</span>
       ))}

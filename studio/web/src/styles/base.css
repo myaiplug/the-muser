@@ -350,3 +350,16 @@ kbd { font-family: var(--fm); font-size: 9px; border: 1px solid var(--ln2); padd
 .api-down { position: fixed; z-index: 95; left: 50%; top: 56px; transform: translateX(-50%); background: var(--bg); border: 1px solid var(--bad); padding: 8px 14px; font-size: 11px; max-width: 92vw; }
 .brand-foot { color: var(--dimmer); font: 9px var(--fm); letter-spacing: .1em; }
 .brand-foot a { color: inherit; }
+
+/* ---- stem lanes and rack, shared (skins add layout on top) */
+.lanes { display: flex; flex-direction: column; gap: 1px; background: var(--ln); border: 1px solid var(--ln); }
+.lane { background: var(--bg); display: grid; grid-template-columns: 180px minmax(0, 1fr); grid-template-rows: auto auto; gap: 6px 14px; padding: 10px 12px; min-width: 0; }
+.lane.is-silent { opacity: .55; }
+.lane-head { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.lane-name { display: flex; align-items: center; gap: 8px; font: 600 var(--hcase, 13px) var(--fh); text-transform: var(--hcase-t, uppercase); letter-spacing: var(--hls, .06em); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lane-wave { min-width: 0; height: 64px; }
+.lane-knobs { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(54px, 1fr)); gap: 6px; }
+.mixer-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.rack-body { container-type: inline-size; }
+@container (max-width: 520px) { .pro-chains { grid-template-columns: minmax(0, 1fr); } }
+.btn.pri:disabled { background: transparent; color: var(--dim); border-color: var(--ln2); opacity: .6; }
