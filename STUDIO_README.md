@@ -1,9 +1,11 @@
-# The Muser Studio: all-in-one AI audio, local and simple
+# NoDAW Studio PRO: all-in-one AI audio, local and simple
 
-> **[Live demo: https://the-muser.vercel.app](https://the-muser.vercel.app)** (browser demo mode). Runs entirely in your browser with a small built-in synth, so audio is **not** AI-generated and stem splitting is simulated. Real AI generation and separation need the local install (see below).
+> **[Live demo: https://the-muser.vercel.app](https://the-muser.vercel.app)** (browser demo mode). Generated audio is a built-in genre synthesizer, **not** AI. The Split tab runs a real Demucs model in your browser. Real AI generation needs the local install (see below).
+>
+> Built on [noah-chelednik/the-muser](https://github.com/noah-chelednik/the-muser) (MIT). **NoDAW mode: v2 coming soon** (see the teaser in the nav bar or the command palette).
 
-A premium studio front end for [The Muser](https://github.com/noah-chelednik/the-muser)
-(the open-source, local AI music composer by Noah Chelednik, MIT licensed).
+NoDAW Studio PRO is a premium studio front end for [The Muser](https://github.com/noah-chelednik/the-muser)
+(the open-source, local AI music composer by Noah Chelednik, MIT licensed). It is built on that project.
 This fork puts the best open-source audio AI tools under one roof, picks the right one for your PC
 automatically, and hides every knob until you ask for it. **Nothing in `src/` was rewritten**:
 the original CLI and Gradio UI still work.
@@ -18,14 +20,47 @@ the original CLI and Gradio UI still work.
 probes `/api/status`; when nothing answers it switches to a built-in browser backend (`src/demo/`) and shows a
 **BROWSER DEMO** ribbon and badge. Add `?demo=1` to force this mode against a local server.
 
-What works in your browser: all three skins, Easy and Advanced modes, the 105 factory presets, macros, finish targets,
-per-stem mixer and FX chains, undo/redo, uploads (WAV and anything your browser can decode), WAV and stems-zip export.
-Audio comes from a small procedural synth plus real DSP (EQ, compression, reverb, limiter, LUFS metering).
+### What is real in the browser
 
-What is simulated or missing, on purpose: the music is **not AI-generated**, "Split stems" uses the synth's own stems
-(or a simple frequency-band split for uploads), engines and the hardware panel are simulated, and there is no MP3/FLAC
-export, LLM chat or audio-to-MIDI for uploads. Tracks live in memory only, so a reload clears them. For real AI models,
-use the local install ([Windows setup](#windows-setup-step-by-step)).
+* **Stem separation** (Split tab, `src/sep/`): onnxruntime-web runs Demucs in a Web Worker. It uses WebGPU when
+  available and falls back to WASM with SIMD and threads (the site sends COOP/COEP headers so threads work). STFT, iSTFT, chunking with
+  overlap, progress, cancel and a model cache (OPFS, with a Cache API fallback) are all in JS.
+  Measured on a 14 s clip, CPU only (8 threads, no GPU): 13.2 s, stems non-silent, stems sum back to the mix at 35.6 dB SNR.
+* **Realtime engineer edits** (Live FX tab): per-stem and master chains (EQ, parametric bands, compressor, saturation,
+  convolver reverb with generated impulse responses, delay, stereo width, filter sweeps, gain, pan, master limiter) with smooth ramps,
+  bypass and undo/redo. Export renders the same chain through an `OfflineAudioContext`, so the file matches what you hear.
+* **Crop and sample** (Sampler tab): waveform region with touch handles, trim, fades, normalize, reverse, loop, beat grid snap with BPM detect,
+  send to the 16 pads by manual chop, transient auto-chop or equal slices, per-pad pitch and rate, sample kits, WAV export.
+* **Mobile**: touch for knobs, faders, region handles and pads. Audio unlocks on the first tap (iOS and Android).
+
+### Models used by the in-browser Split
+
+| Model | Use | Size | License |
+|---|---|---|---|
+| HTDemucs ONNX (`timcsy/demucs-web-onnx`, embedded weights) | 4 stems: drums, bass, vocals, other | 181 MB | Demucs code MIT. Pretrained weight terms are not stated in the ONNX repo, so treat as personal and research use. |
+| Mini-BS-RoFormer V2.5 (`HiDolen/Mini-BS-RoFormer-V2.5-46.2M`) | Vocals and instrumental, lighter, default on phones | 97 MB | MIT |
+| Mel-Band RoFormer Duality student (`musetric/mel-band-roformer-duality-student-onnx`) | Vocals and instrumental | 219 MB | Apache-2.0 |
+
+Weights download once from Hugging Face (CORS) and are cached. Phones get a size warning and a shorter clip cap. Long files are capped at
+240 s on WASM and 600 s on WebGPU. WebGPU was not testable on the headless build box, so it is untested here.
+
+### The generated demo audio
+
+The "Generate" button in the demo uses a procedural genre synthesizer (`src/demo/genres.ts`, `voices.ts`, `synth.ts`). It is DSP, **not AI**.
+Each of the 24 genre tiles has its own recipe: tempo, swing, drum patterns with synthesized drums and transients, 808s with glide for trap, drill and phonk,
+supersaws for EDM and trance, Rhodes-like keys for lo-fi, jazz and gospel, plucked guitars for indie, country and rock, chord progressions with voice leading,
+basslines, a four-bar lead phrase, humanized timing and an arrangement (intro, build, drop or chorus, outro), then a per-stem mix with sidechain pump,
+reverb and a master limiter. The four stems always sum to the mix.
+
+What is missing on purpose: the music is not AI-generated, engines and the hardware panel are simulated, and there is no LLM chat, audio-to-MIDI
+for uploads or MP3/FLAC export. Tracks live in memory only, so a reload clears them. For real AI models, use the local install
+([Windows setup](#windows-setup-step-by-step)).
+
+### Browser text-to-music (MusicGen): researched, not shipped
+
+`Xenova/musicgen-small` runs in transformers.js, but the weights are CC-BY-NC-4.0 (personal use only), the q8 download is about 571 MiB, it generates
+about 10 s per 500 tokens on WASM, and WebGPU has a reported precision bug in the decoder. It is not enabled. If it is added later it must stay opt-in,
+labelled personal use only, and never the default.
 
 Redeploy: `cd studio/web && npx vercel deploy --prod --scope nodawlabs` (see `studio/web/vercel.json`).
 
@@ -97,6 +132,8 @@ On an **8 GB RTX 2080 Super** the Studio:
 
 * Runs **ACE-Step 1.5** (full songs with vocals, MIT, commercial OK) with its 8 GB profile:
   2B turbo DiT, 0.6B language model on the `pt` backend, CPU offload and INT8 weights.
+  Every one of the 24 genre presets (`studio/presets/genre/*.json`, built by `python3 -m studio.tools.build_presets`) carries tuned 8 GB settings
+  (profile, a genre-specific tag caption, BPM, key and scale, time signature, 8 turbo steps, duration and one candidate).
 * Uses **fp16** everywhere, because RTX 20 cards (Turing) have no bf16 or FlashAttention 2.
 * Recommends: ACE-Step 1.5, Stable Audio Open (fp16, short clips), Applio (RVC), Seed-VC,
   Resemble Enhance, Demucs and Audio Separator, plus every CPU tool.
@@ -268,11 +305,11 @@ node studio\tools\ui_skins.mjs                        # click-through test of al
 .\.venv\Scripts\python -m pytest tests\test_studio_engines.py tests\test_studio_v2_api.py
 ```
 
-NoDAW Labs Studio front end, built on The Muser (MIT). Skins live in `studio/web/src/skins/` (one folder each, sharing `skins/shared/`).
+NoDAW Studio PRO front end by NoDAW Labs, built on The Muser (MIT). Skins live in `studio/web/src/skins/` (one folder each, sharing `skins/shared/`).
 
 ## Credits and license
 
-The Muser (c) The Muser Contributors, MIT, see [LICENSE](LICENSE), [NOTICE](NOTICE) and
+The Muser (c) The Muser Contributors, MIT (upstream, unchanged), see [LICENSE](LICENSE), [NOTICE](NOTICE) and
 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Upstream: https://github.com/noah-chelednik/the-muser.
 Studio front end by NoDAW Labs, released under the same MIT license. Each integrated tool keeps its own
 license, listed above.

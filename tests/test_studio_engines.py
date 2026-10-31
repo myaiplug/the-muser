@@ -524,3 +524,22 @@ def test_acestep_upstream_profile(monkeypatch):
     assert big.dit_model == "acestep-v15-sft" and big.quantization is None
     monkeypatch.setenv("MUSER_ACESTEP_QUANT", "none")
     assert acestep_profile(7.8).quantization is None
+
+
+def test_every_genre_has_tuned_acestep_8gb_settings():
+    from studio.server import presets
+
+    genres = [p for p in presets.all_presets().values() if p["category"] == "genre"]
+    assert len(genres) == 24
+    seen = set()
+    for g in genres:
+        ace = g["generate"].get("acestep")
+        assert ace, g["id"]
+        assert ace["profile"] == "8gb"
+        assert len(ace["tags"].split()) >= 20, g["id"]
+        assert ace["infer_step"] == 8  # the 8 GB profile loads the turbo DiT
+        assert 10 <= ace["duration_s"] <= 60  # short on purpose: offloaded DiT is slow
+        assert ace["lyrics"] == "[instrumental]"
+        assert "—" not in ace["tags"]
+        seen.add(ace["tags"])
+    assert len(seen) == 24  # no two genres share a prompt

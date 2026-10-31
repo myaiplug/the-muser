@@ -1,6 +1,10 @@
-# The Muser
+# NoDAW Studio PRO
 
-> **[Live demo: https://the-muser.vercel.app](https://the-muser.vercel.app)** (browser demo mode). Runs entirely in your browser with a small built-in synth, so audio is **not** AI-generated and stem splitting is simulated. Real AI generation and separation need the local install (see below).
+> **Built on [noah-chelednik/the-muser](https://github.com/noah-chelednik/the-muser) (MIT).** NoDAW Studio PRO is the NoDAW Labs studio front end and fork of The Muser. The original project, its license and its notices are kept as they are.
+>
+> **[Live demo: https://the-muser.vercel.app](https://the-muser.vercel.app)** (browser demo mode). Generated audio comes from a built-in genre synthesizer, so it is **not** AI-generated. The Split tab is real: it runs Demucs (ONNX) on your own audio inside the page. Real AI generation needs the local install (see below).
+>
+> **NoDAW mode: v2 coming soon.** Sound library, pattern builder, full beat arrangement, MP3/WAV/FLAC export and FL Studio (.flp) and REAPER (.rpp) import.
 
 **The open-source alternative to Suno and ElevenLabs Music.**
 Run locally. Own everything. No subscriptions, no ToS, no limits.
@@ -22,7 +26,7 @@ muser
 >
 > The Muser generates candidates, selects the best, and exports production-ready audio.
 
-> **NoDAW Labs fork:** this fork adds **The Muser Studio**, a hardware-style web studio (stem splitting,
+> **NoDAW Labs fork:** this fork adds **NoDAW Studio PRO**, a hardware-style web studio (stem splitting,
 > per-stem mixer, pads, keys, undo/redo) on top of the original agent. See **[STUDIO_README.md](STUDIO_README.md)**
 > for Windows setup (`setup_windows.bat` → `start_studio.bat`).
 
