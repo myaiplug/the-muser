@@ -14,6 +14,8 @@ export type Status = {
   ollama_models: string[]
   llm_models: string[]
   tool_count: number
+  /** True when served by the in-browser demo backend (no Python server). */
+  browser_demo?: boolean
 }
 
 export type StemInfo = { id: string; name: string; path: string; url: string; color: string }

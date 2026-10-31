@@ -109,8 +109,8 @@ export function DemoBadge() {
   const { setDrawerTab } = useSkin()
   if (status?.mode !== 'demo') return null
   return (
-    <button className="demo-badge" data-testid="demo-badge" onClick={() => { setDrawerTab('system'); setShowSystem(true) }} title="No LLM or audio models are connected, so tracks come from the built-in demo synthesizer. Click to see what is missing.">
-      Demo mode
+    <button className="demo-badge" data-testid="demo-badge" onClick={() => { setDrawerTab('system'); setShowSystem(true) }} title={status.browser_demo ? 'Browser demo: tracks come from a small in-browser synthesizer, not AI. Real AI needs the local install. Click for details.' : 'No LLM or audio models are connected, so tracks come from the built-in demo synthesizer. Click to see what is missing.'}>
+      {status.browser_demo ? 'Browser demo' : 'Demo mode'}
     </button>
   )
 }

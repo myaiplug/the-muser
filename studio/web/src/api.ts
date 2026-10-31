@@ -22,7 +22,7 @@ const get = <T,>(url: string) => fetch(url).then((r) => j<T>(r))
 type JobRef = { job_id: string }
 const enc = encodeURIComponent
 
-export const api = {
+const remote = {
   status: (refresh = false) => fetch(`/api/status${refresh ? '?refresh=true' : ''}`).then((r) => j<Status>(r)),
   tracks: () => fetch('/api/tracks').then((r) => j<Track[]>(r)),
   deleteTrack: (id: string) => fetch(`/api/tracks/${id}`, { method: 'DELETE' }).then((r) => j(r)),
@@ -79,6 +79,39 @@ export const api = {
   saveSession: (body: unknown) => put('/api/session', body).then((r) => j(r)),
 }
 
+export type Api = typeof remote
+
+let demo: Api | null = null
+/** True when the Studio is running its in-browser demo backend (no Python server reachable). */
+export const isBrowserDemo = () => demo !== null
+
+/** Calls go to the Python server, or to the in-browser demo backend when no server answers. */
+export const api: Api = new Proxy(remote, {
+  get: (t, k) => (demo ? (demo as never)[k] : (t as never)[k]),
+})
+
+/**
+ * Probe the server once at startup. A network error, a timeout, or a non-JSON reply (a static
+ * host rewriting /api/* to index.html) switches to the browser demo. Set ?demo=1 to force it.
+ */
+export async function initApi(): Promise<void> {
+  const force = new URLSearchParams(location.search).get('demo') === '1'
+  let ok = false
+  if (!force) {
+    try {
+      const ctl = new AbortController()
+      const timer = setTimeout(() => ctl.abort(), 3500)
+      const res = await fetch('/api/status', { signal: ctl.signal })
+      clearTimeout(timer)
+      const body = res.ok && (res.headers.get('content-type') ?? '').includes('json') ? await res.json() : null
+      ok = !!body && typeof body === 'object' && 'items' in body
+    } catch {
+      ok = false
+    }
+  }
+  if (!ok) demo = (await import('./demo/backend')).createDemoApi()
+}
+
 /** Poll a job until it finishes. */
 export async function waitJob<T>(id: string, onMsg?: (m: string) => void): Promise<T> {
   for (;;) {
@@ -98,6 +131,7 @@ export async function streamChat(
   onEvent: (e: ChatEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
+  if (demo) return (await import('./demo/backend')).demoChat(body, onEvent, signal)
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
