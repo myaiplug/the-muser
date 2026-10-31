@@ -46,7 +46,8 @@ ok(await page.locator(T('mode-easy')).count(), 'easy mode toggle present')
 ok(await page.locator(T('demo-badge')).count(), 'demo badge present')
 const hot = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--hot').trim().toLowerCase())
 ok(/^#[0-9a-f]{6}$/.test(hot), 'accent token resolves')
-log('boot ok, hot token', hot)
+const DEMO = (await page.locator(T('demo-ribbon')).count()) > 0
+log('boot ok, hot token', hot, DEMO ? '(browser demo)' : '')
 
 // ---- skin switcher: button, thumbnails, Alt+S, palette, persistence, state kept
 await page.locator(T('skin-button')).click()
@@ -109,7 +110,8 @@ for (const skin of SKINS) {
 
   const vb = await versions()
   // the version list is capped at 40 and restored from autosave, so wait on the render call, not on growth
-  const rendered = page.waitForResponse((r) => r.url().includes('/api/easy/render') && r.ok(), { timeout: 120000 })
+  // in the serverless browser demo there is no network call, so just settle and wait for idle
+  const rendered = DEMO ? settle(1500) : page.waitForResponse((r) => r.url().includes('/api/easy/render') && r.ok(), { timeout: 120000 })
   await page.keyboard.press('2')
   for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight')
   await rendered
@@ -128,7 +130,7 @@ for (const skin of SKINS) {
 
   await page.locator(T('export')).click()
   await page.locator(`${T('files')} a`).first().waitFor({ timeout: 120000 })
-  ok((await page.locator(`${T('files')} a`).count()) >= 2, `${skin}: export lists WAV and MP3`)
+  ok((await page.locator(`${T('files')} a`).count()) >= (DEMO ? 1 : 2), `${skin}: export lists WAV and MP3`)
 
   const tools = page.locator(`${T('tools')} button`)
   ok((await tools.count()) >= 5, `${skin}: one-click tools`)

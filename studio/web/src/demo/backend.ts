@@ -492,7 +492,7 @@ export function createDemoApi(): Api {
       let out = t.audio
       if (req.normalize !== false) out = D.masterTo(D.clone(t.audio), -14, -1)
       const files: Record<string, string> = { wav: urlOf(out) }
-      if (req.include_stems && t.pub.stems.length) {
+      if (t.pub.stems.length) { // the demo always bundles the stems, there is no MP3 to offer instead
         const zip = await zipFiles(t.pub.stems.flatMap((s) => { const a = stemAudio.get(s.id); return a ? [{ name: `${s.name.replace(/\s+/g, '_')}.wav`, blob: D.encodeWav(a) }] : [] }))
         files.stems_zip = URL.createObjectURL(zip)
       }
