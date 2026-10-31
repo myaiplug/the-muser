@@ -38,7 +38,7 @@ function arcPath(cx: number, cy: number, r: number, a0: number, a1: number) {
 }
 
 export function Knob({
-  label, value, min, max, defaultValue, step = 0, size = 56, color = 'var(--gold)', bipolar,
+  label, value, min, max, defaultValue, step = 0, size = 56, color = 'var(--hot)', bipolar,
   format = (v) => v.toFixed(1), onBegin, onChange, onEnd, onCommit, title,
 }: KnobProps) {
   const ref = useRef<HTMLDivElement>(null)
@@ -160,17 +160,6 @@ export function Knob({
         style={{ width: s, height: s }}
       >
         <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-          <defs>
-            <radialGradient id="kb" cx="35%" cy="30%" r="80%">
-              <stop offset="0%" stopColor="#4a4a52" />
-              <stop offset="45%" stopColor="#1f1f25" />
-              <stop offset="100%" stopColor="#0b0b0e" />
-            </radialGradient>
-            <linearGradient id="kbrim" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8a8a93" />
-              <stop offset="100%" stopColor="#16161a" />
-            </linearGradient>
-          </defs>
           <path d={arcPath(c, c, ringR, START, START + ARC)} className="knob-track" />
           {norm > 0.001 || bipolar ? (
             <path
@@ -182,8 +171,8 @@ export function Knob({
             const [x, y] = polar(c, c, ringR, START + (i / (DOTS - 1)) * ARC)
             return <circle key={i} cx={x} cy={y} r={1.1} className={lit(i) ? 'led on' : 'led'} />
           })}
-          <circle cx={c} cy={c} r={bodyR + 2} fill="url(#kbrim)" />
-          <circle cx={c} cy={c} r={bodyR} fill="url(#kb)" className="knob-body" />
+          <circle cx={c} cy={c} r={bodyR + 2} className="knob-rim" />
+          <circle cx={c} cy={c} r={bodyR} className="knob-body" />
           <g transform={`rotate(${angle} ${c} ${c})`}>
             <line x1={c} y1={c - bodyR + 3} x2={c} y2={c - bodyR * 0.35} className="knob-pointer" />
           </g>

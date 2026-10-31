@@ -2,8 +2,8 @@ import { useState } from 'react'
 import type { Status, Track } from '../types'
 import { EnginesPanel } from './EnginesPanel'
 
-export function SystemDrawer({ status, onClose, onRefresh, toast }: { status: Status | null; onClose: () => void; onRefresh: () => void; toast?: (t: string, k?: 'info' | 'error' | 'ok') => void }) {
-  const [tab, setTab] = useState<'engines' | 'system'>('engines')
+export function SystemDrawer({ status, onClose, onRefresh, toast, initialTab = 'engines' }: { initialTab?: 'engines' | 'system'; status: Status | null; onClose: () => void; onRefresh: () => void; toast?: (t: string, k?: 'info' | 'error' | 'ok') => void }) {
+  const [tab, setTab] = useState<'engines' | 'system'>(initialTab)
   return (
     <div className="overlay" onClick={onClose}>
       <aside className="drawer" onClick={(e) => e.stopPropagation()}>
@@ -71,7 +71,7 @@ export function ExportDialog({ track, onClose, onExport }: {
         <label className="check"><input type="checkbox" checked={normalize} onChange={(e) => setNormalize(e.target.checked)} /> Loudness normalize (-14 LUFS)</label>
         <label className="check"><input type="checkbox" checked={stems} disabled={!track.stems.length} onChange={(e) => setStems(e.target.checked)} /> Include stems (.zip)</label>
         <button
-          className="btn gold full"
+          className="btn pri full"
           disabled={busy || !formats.length}
           onClick={async () => {
             setBusy(true)

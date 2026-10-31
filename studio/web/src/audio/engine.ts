@@ -114,9 +114,10 @@ class StudioAudio {
   }
 
   /** Replace the loaded channel set. */
-  async load(list: { id: string; url: string }[]): Promise<void> {
+  async load(list: { id: string; url: string }[], opts: { keepPosition?: boolean } = {}): Promise<void> {
     const ctx = this.ensure()
     const wasPlaying = this.playing
+    const keep = opts.keepPosition ? this.currentTime() : 0
     this.stop()
     this.channels.forEach((c) => c.analyser.disconnect())
     this.channels.clear()
@@ -165,7 +166,7 @@ class StudioAudio {
       })
     })
     this.duration = Math.max(0, ...buffers.map((b) => b.duration))
-    this.offset = 0
+    this.offset = Math.min(keep, Math.max(0, this.duration - 0.05))
     if (wasPlaying) this.play()
     this.emit()
   }

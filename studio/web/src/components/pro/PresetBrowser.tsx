@@ -104,7 +104,7 @@ export function PresetBrowser({ trackId, stemId, onApply, applyLabel, toast, cur
             </div>
             <div className="preset-actions">
               <button className="btn ghost small" disabled={previewing === p.id} onClick={() => void doPreview(p)}>{previewing === p.id ? '...' : 'Preview'}</button>
-              <button className="btn gold small" onClick={() => onApply(p)}>{applyLabel}</button>
+              <button className="btn pri small" onClick={() => onApply(p)}>{applyLabel}</button>
               {p.user && <button className="icon-btn" aria-label="Delete preset" onClick={async () => { await api.deletePreset(p.id); void load() }}>×</button>}
             </div>
           </div>

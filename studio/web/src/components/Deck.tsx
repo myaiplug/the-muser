@@ -98,7 +98,7 @@ export function Deck({ history }: Props) {
       max={max}
       defaultValue={def}
       size={50}
-      color="var(--cyan)"
+      color="var(--k2)"
       format={fmt}
       onBegin={() => history.begin(`Synth ${label}`)}
       onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, [key]: v } }))}
@@ -117,7 +117,7 @@ export function Deck({ history }: Props) {
       defaultValue={def}
       size={50}
       bipolar={key === 'pitch'}
-      color="var(--magenta)"
+      color="var(--k3)"
       format={fmt}
       onBegin={() => history.begin(`Pads ${label}`)}
       onChange={(v) => history.preview((s) => ({ ...s, pads: { ...s.pads, [key]: v } }))}
@@ -160,7 +160,6 @@ export function Deck({ history }: Props) {
               <button
                 key={p.name}
                 className={`pad ${hitPads.has(i) ? 'hit' : ''} ${selPad === i ? 'sel' : ''}`}
-                style={{ ['--pad' as string]: p.color }}
                 onPointerDown={(e) => { e.preventDefault(); hitPad(i); setSelPad(i) }}
               >
                 <span className="pad-name">{p.name}</span>
@@ -171,7 +170,7 @@ export function Deck({ history }: Props) {
           <div className="seq">
             <div className="seq-head">
               <button
-                className={`btn ${seqOn ? 'gold' : ''}`}
+                className={`btn ${seqOn ? 'pri' : ''}`}
                 onClick={() => {
                   if (sequencer.running) { sequencer.stop(); setSeqOn(false) } else { sequencer.start(); setSeqOn(true) }
                 }}
@@ -203,7 +202,7 @@ export function Deck({ history }: Props) {
             </div>
             <div className="seq-rows">
               {[0, 1, 4, 5, 2, 11, 12, selPad].filter((v, i, a) => a.indexOf(v) === i).map((pad) => (
-                <div className={`seq-row ${pad === selPad ? 'sel' : ''}`} key={pad} style={{ ['--pad' as string]: PADS[pad].color }}>
+                <div className={`seq-row ${pad === selPad ? 'sel' : ''}`} key={pad}>
                   <span className="seq-label" onClick={() => setSelPad(pad)}>{PADS[pad].name}</span>
                   {proj.pattern[pad].map((on, st) => (
                     <button

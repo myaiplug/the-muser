@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { tapAudioElement } from '../studio/viz'
 
 /** Lightweight file player with a drawn waveform. Used by Easy mode and A/B compare. */
 const peakCache = new Map<string, Float32Array>()
@@ -26,11 +27,10 @@ async function loadPeaks(url: string, n = 600): Promise<Float32Array> {
 
 const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`
 
-export function Player({ url, title, sub, accent = '#e3b95c', compact = false, audioRef }: {
+export function Player({ url, title, sub, compact = false, audioRef }: {
   url: string
   title?: string
   sub?: string
-  accent?: string
   compact?: boolean
   audioRef?: (el: HTMLAudioElement | null) => void
 }) {
@@ -65,12 +65,15 @@ export function Player({ url, title, sub, accent = '#e3b95c', compact = false, a
     const n = peaks.length
     const bw = w / n
     const prog = dur ? t / dur : 0
+    const cs = getComputedStyle(c)
+    const accent = cs.getPropertyValue('--hot').trim() || '#fff'
+    const rest = cs.getPropertyValue('--dim-wave').trim() || 'rgba(255,255,255,0.22)'
     for (let i = 0; i < n; i++) {
       const v = Math.max(0.04, peaks[i]) * (h / 2 - 2)
-      g.fillStyle = i / n < prog ? accent : 'rgba(236,235,230,0.22)'
+      g.fillStyle = i / n < prog ? accent : rest
       g.fillRect(i * bw, h / 2 - v, Math.max(1, bw - 0.6), v * 2)
     }
-  }, [peaks, t, dur, accent])
+  }, [peaks, t, dur])
 
   const toggle = () => {
     const a = el.current
@@ -88,13 +91,13 @@ export function Player({ url, title, sub, accent = '#e3b95c', compact = false, a
         }}
         src={url}
         preload="auto"
-        onPlay={() => setPlaying(true)}
+        onPlay={(e) => { setPlaying(true); tapAudioElement(e.currentTarget) }}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
         onTimeUpdate={(e) => setT(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setDur(e.currentTarget.duration)}
       />
-      <button className={`play-orb ${playing ? 'on' : ''}`} onClick={toggle} aria-label={playing ? 'Pause preview' : 'Play preview'}>
+      <button className={`play-btn ${playing ? 'on' : ''}`} onClick={toggle} aria-label={playing ? 'Pause preview' : 'Play preview'}>
         {playing ? '❚❚' : '▶'}
       </button>
       <div className="player-body">

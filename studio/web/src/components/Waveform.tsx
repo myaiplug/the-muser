@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { audio } from '../audio/engine'
 
-type Props = { buffer?: AudioBuffer; color: string; height?: number; dim?: boolean; onSeek?: (t: number) => void }
+type Props = { buffer?: AudioBuffer; color?: string; height?: number; dim?: boolean; onSeek?: (t: number) => void }
 
 const peaksCache = new WeakMap<AudioBuffer, Float32Array>()
 
@@ -38,6 +38,14 @@ export function Waveform({ buffer, color, height = 54, dim, onSeek }: Props) {
 
   useEffect(() => {
     let raf = 0
+    const cs0 = canvas.current ? getComputedStyle(canvas.current) : null
+    const v = (n: string, d: string) => cs0?.getPropertyValue(n).trim() || d
+    const rest = v('--wave-rest', 'rgba(255,255,255,0.22)')
+    const grid = v('--wave-grid', 'rgba(255,255,255,0.04)')
+    const head = v('--wave-head', '#fff')
+    const label = v('--wave-label', 'rgba(255,255,255,0.25)')
+    const glow = v('--wave-glow', '0') === '1'
+    const tint = color || v('--stem', '#fff')
     const draw = () => {
       const cv = canvas.current
       if (!cv) return
@@ -52,7 +60,7 @@ export function Waveform({ buffer, color, height = 54, dim, onSeek }: Props) {
       g.setTransform(dpr, 0, 0, dpr, 0, 0)
       g.clearRect(0, 0, w, h)
       // grid
-      g.strokeStyle = 'rgba(255,255,255,0.04)'
+      g.strokeStyle = grid
       g.lineWidth = 1
       for (let x = 0; x < w; x += w / 16) {
         g.beginPath()
@@ -61,8 +69,8 @@ export function Waveform({ buffer, color, height = 54, dim, onSeek }: Props) {
         g.stroke()
       }
       if (!buffer) {
-        g.fillStyle = 'rgba(255,255,255,0.25)'
-        g.font = '11px JetBrains Mono, monospace'
+        g.fillStyle = label
+        g.font = '11px monospace'
         g.fillText('loading...', 8, h / 2 + 4)
         raf = requestAnimationFrame(draw)
         return
@@ -76,14 +84,14 @@ export function Waveform({ buffer, color, height = 54, dim, onSeek }: Props) {
         const i = Math.floor((x / w) * n)
         const mn = pk[i * 2]
         const mx = pk[i * 2 + 1]
-        g.fillStyle = x < px ? color : 'rgba(255,255,255,0.22)'
+        g.fillStyle = x < px ? tint : rest
         g.globalAlpha = dim ? 0.35 : 1
         g.fillRect(x, mid - mx * mid * 0.95, 1, Math.max(1, (mx - mn) * mid * 0.95))
       }
       g.globalAlpha = 1
-      g.fillStyle = '#fff'
-      g.shadowColor = color
-      g.shadowBlur = 8
+      g.fillStyle = head
+      g.shadowColor = tint
+      g.shadowBlur = glow ? 8 : 0
       g.fillRect(px - 0.5, 0, 1.5, h)
       g.shadowBlur = 0
       raf = requestAnimationFrame(draw)

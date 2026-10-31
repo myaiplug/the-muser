@@ -67,7 +67,7 @@ export function EnginesPanel({ toast }: { toast?: (t: string, k?: 'info' | 'erro
         <div><span className="muted">GPU</span><strong>{hw.hardware.gpu || 'None detected'}{hw.hardware.vram_gb ? ` · ${hw.hardware.vram_gb} GB` : ''}</strong></div>
         <div><span className="muted">RAM</span><strong>{hw.hardware.ram_gb} GB</strong></div>
         <div><span className="muted">CPU</span><strong>{hw.hardware.cpu_count} threads</strong></div>
-        <div><span className="muted">Tier</span><strong className="gold-text">{hw.tier}</strong></div>
+        <div><span className="muted">Tier</span><strong className="hot-text">{hw.tier}</strong></div>
       </div>
       {hw.hardware.vram_gb > 0 && (
         <div className="fit-card">

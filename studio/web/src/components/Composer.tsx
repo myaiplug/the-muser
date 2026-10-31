@@ -194,7 +194,7 @@ export function Composer({ status, onTrack, onGenerate, generating }: Props) {
         {streaming ? (
           <button type="button" className="btn send" onClick={() => abort.current?.abort()}>Stop</button>
         ) : (
-          <button type="submit" className="btn gold send" disabled={!input.trim()}>Send</button>
+          <button type="submit" className="btn pri send" disabled={!input.trim()}>Send</button>
         )}
       </form>
       <div className="direct">
@@ -206,7 +206,7 @@ export function Composer({ status, onTrack, onGenerate, generating }: Props) {
             {KEYS.map((k) => <option key={k} value={k}>{k || 'Key: auto'}</option>)}
           </select>
           <button
-            className="btn gold"
+            className="btn pri"
             disabled={generating || !input.trim()}
             onClick={() => onGenerate({ prompt: input.trim(), duration_s: duration, bpm: bpm >= 40 ? bpm : null, key })}
             title={mode === 'full' ? 'Generate with ACE-Step' : 'ACE-Step unavailable: renders a demo-synth sketch'}
