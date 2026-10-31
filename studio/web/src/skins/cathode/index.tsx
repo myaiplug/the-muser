@@ -15,7 +15,7 @@ import { prefersReducedMotion, stemLevel, useFrame, viz, webgl2Available, type F
 import type { Preset } from '../../types'
 import { ComposerPane, DeckPane, LibraryPane } from '../shared/Panes'
 import { Overview } from '../shared/Overview'
-import { SkinButton } from '../shared/SkinSwitcher'
+import { NoDawButton, SkinButton } from '../shared/SkinSwitcher'
 import { MasterKnob, StemActions, StemLanes } from '../shared/Stems'
 import { DemoBadge, EnginesButton, HistoryControls, SysLeds } from '../shared/TopParts'
 import { useDrag, useWheelX } from '../shared/hooks'
@@ -104,7 +104,7 @@ function Top() {
     <header className="cc-top">
       <div className="cc-brand">
         <svg viewBox="0 0 24 24" aria-hidden><path d="M2 12h4l2-7 3 14 3-10 2 3h6" /></svg>
-        <b>THE MUSER</b>
+        <b>NODAW STUDIO <u>PRO</u></b>
         <i>CATHODE</i>
       </div>
       <nav className="cc-modes mode-toggle" data-mode={mode} role="tablist" aria-label="Studio mode">
@@ -118,6 +118,7 @@ function Top() {
         <span>{track?.key ? track.key.toUpperCase() : '---'}</span>
         <span>{lufs != null ? lufs.toFixed(1) : '--.-'} <i>LUFS</i></span>
         <DemoBadge />
+        <NoDawButton />
         <SkinButton />
         <SysLeds />
         <EnginesButton>ENGINES<b>8 GB</b></EnginesButton>

@@ -132,6 +132,20 @@ def validate(p: dict, known: dict[str, dict] | None = None) -> dict:
                 "duration_s": float(g.get("duration_s") or 30),
                 "lyrics": str(g.get("lyrics") or ""),
             }
+            ace = g.get("acestep")
+            if isinstance(ace, dict) and str(ace.get("tags") or "").strip():
+                out["generate"]["acestep"] = {
+                    "profile": str(ace.get("profile") or "8gb")[:20],
+                    "tags": str(ace["tags"])[:1500],
+                    "lyrics": str(ace.get("lyrics") or "[instrumental]")[:2000],
+                    "bpm": max(40, min(220, int(ace.get("bpm") or g.get("bpm") or 100))),
+                    "key_scale": str(ace.get("key_scale") or "")[:20],
+                    "time_signature": str(ace.get("time_signature") or "4")[:4],
+                    "infer_step": max(1, min(200, int(ace.get("infer_step") or 8))),
+                    "guidance_scale": max(0.0, min(30.0, float(ace.get("guidance_scale") or 7.0))),
+                    "duration_s": max(5.0, min(240.0, float(ace.get("duration_s") or 30))),
+                    "num_candidates": max(1, min(2, int(ace.get("num_candidates") or 1))),
+                }
             stems = p.get("stems") or {}
             for role, ref in stems.items():
                 if isinstance(ref, str) and ref not in known:

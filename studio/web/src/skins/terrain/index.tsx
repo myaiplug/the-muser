@@ -16,7 +16,7 @@ import { prefersReducedMotion, stemLevel, useFrame, viz, webgl2Available } from 
 import type { Preset } from '../../types'
 import { ComposerPane, DeckPane, LibraryPane } from '../shared/Panes'
 import { Overview } from '../shared/Overview'
-import { SkinButton } from '../shared/SkinSwitcher'
+import { NoDawButton, SkinButton } from '../shared/SkinSwitcher'
 import { MasterKnob, StemActions, StemLanes } from '../shared/Stems'
 import { DemoBadge, EnginesButton, HistoryControls, SysLeds } from '../shared/TopParts'
 import { useDrag } from '../shared/hooks'
@@ -98,7 +98,7 @@ function TopBar() {
   const lufs = easy.report?.lufs ?? easy.analysis?.lufs
   return (
     <header className="ca-top">
-      <div className="ca-brand"><Logo /><b>THE MUSER</b><i>NODAW LABS / STUDIO</i></div>
+      <div className="ca-brand"><Logo /><b>NODAW STUDIO PRO</b><i>BUILT ON THE-MUSER</i></div>
       <nav className="ca-modes" data-mode={mode} role="tablist" aria-label="Studio mode">
         <button role="tab" aria-selected={mode === 'easy'} data-testid="mode-easy" className={mode === 'easy' ? 'on' : ''} onClick={() => setMode('easy')}><i>01</i>EASY</button>
         <button role="tab" aria-selected={mode === 'advanced'} data-testid="mode-advanced" className={mode === 'advanced' ? 'on' : ''} onClick={() => setMode('advanced')}><i>02</i>ADVANCED</button>
@@ -109,6 +109,7 @@ function TopBar() {
         <span className="ca-n"><i>KEY</i><b>{track?.key ? track.key.toUpperCase() : '---'}</b></span>
         <span className="ca-n"><i>LUFS</i><b>{lufs != null ? lufs.toFixed(1) : '--.-'}</b></span>
         <DemoBadge />
+        <NoDawButton />
         <SkinButton />
         <SysLeds />
         <EnginesButton><i>ENGINES</i><b>8 GB</b></EnginesButton>

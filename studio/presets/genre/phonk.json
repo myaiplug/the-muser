@@ -16,7 +16,19 @@
     "prompt": "phonk, cowbell melody, distorted 808, memphis trap drums",
     "bpm": 130,
     "duration_s": 30,
-    "lyrics": ""
+    "lyrics": "",
+    "acestep": {
+      "profile": "8gb",
+      "tags": "Memphis phonk instrumental, distorted saturated 808, chopped cowbell melody, aggressive lo-fi trap drums, dark vocal chop samples, gritty tape distortion, drift-car energy, 130 bpm",
+      "lyrics": "[instrumental]",
+      "bpm": 130,
+      "key_scale": "D minor",
+      "time_signature": "4",
+      "infer_step": 8,
+      "guidance_scale": 7.0,
+      "duration_s": 32,
+      "num_candidates": 1
+    }
   },
   "stems": {
     "drums": "mix/crushed-drums",

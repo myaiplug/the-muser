@@ -20,7 +20,7 @@ import { MACRO_META, TOOLS, dynFor, familyOf, fmtTime, tempoWord } from '../../s
 import { NB, prefersReducedMotion, stemLevel, useFrame, viz } from '../../studio/viz'
 import { ComposerPane, DeckPane, LibraryPane } from '../shared/Panes'
 import { Overview } from '../shared/Overview'
-import { SkinButton } from '../shared/SkinSwitcher'
+import { NoDawButton, SkinButton } from '../shared/SkinSwitcher'
 import { MasterKnob, STRIP_PARAMS, StemActions, useStrip, db } from '../shared/Stems'
 import { DemoBadge, EnginesButton, HistoryControls, SysLeds } from '../shared/TopParts'
 import { useDrag } from '../shared/hooks'
@@ -106,7 +106,7 @@ function Top() {
   const lufs = easy.report?.lufs ?? easy.analysis?.lufs
   return (
     <header className="cb-top">
-      <a className="cb-brand" href="#/" onClick={(e) => e.preventDefault()}><span>The Muser</span><i>NoDAW Labs Studio</i></a>
+      <a className="cb-brand" href="#/" onClick={(e) => e.preventDefault()}><span>NoDAW Studio <em>PRO</em></span><i>built on the-muser</i></a>
       <nav className="cb-modes" data-mode={mode} role="tablist" aria-label="Studio mode">
         <button role="tab" aria-selected={mode === 'easy'} data-testid="mode-easy" className={mode === 'easy' ? 'on' : ''} onClick={() => setMode('easy')}>Easy</button>
         <b>/</b>
@@ -117,6 +117,7 @@ function Top() {
         <span className="cb-r">{track?.key ?? 'no key'}</span>
         <span className="cb-r">{lufs != null ? `${lufs.toFixed(1)} LUFS` : 'unmastered'}</span>
         <DemoBadge />
+        <NoDawButton />
         <SkinButton />
         <SysLeds />
         <EnginesButton>Engines <b>8 GB</b></EnginesButton>

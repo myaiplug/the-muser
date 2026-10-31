@@ -44,7 +44,7 @@ export function Thumb({ id }: { id: SkinId }) {
     <svg viewBox="0 0 160 96" role="img" aria-label="Score preview">
       <rect width="160" height="96" fill="#ECE9E2" />
       <rect x="0" y="0" width="160" height="9" fill="none" stroke="#0B0B0C" strokeWidth=".6" />
-      <text x="6" y="7" fontFamily="Georgia, serif" fontStyle="italic" fontSize="7" fill="#0B0B0C">The Muser</text>
+      <text x="6" y="7" fontFamily="Georgia, serif" fontStyle="italic" fontSize="7" fill="#0B0B0C">NoDAW Studio PRO</text>
       {[0, 1, 2, 3, 4].map((i) => (
         <line key={i} x1="8" x2="152" y1={30 + i * 5} y2={30 + i * 5} stroke="#0B0B0C" strokeWidth=".6" />
       ))}
@@ -88,6 +88,17 @@ export function SkinButton() {
     >
       <SkinIcon />
       <span>{def.name}</span>
+    </button>
+  )
+}
+
+/** Top bar entry for the NoDAW mode (v2) teaser. */
+export function NoDawButton() {
+  const { setNodawOpen } = useSkin()
+  return (
+    <button className="sw-btn nodaw-btn" data-testid="nodaw-button" onClick={() => setNodawOpen(true)} title="NoDAW mode: v2 coming soon">
+      <span>NoDAW</span>
+      <em>v2 soon</em>
     </button>
   )
 }

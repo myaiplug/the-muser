@@ -27,7 +27,7 @@ export function Composer({ status, onTrack, onGenerate, generating }: Props) {
     {
       kind: 'assistant',
       text:
-        'Welcome to **The Muser Studio**. Describe the music you want - genre, mood, tempo, key, instruments - and I will compose it. ' +
+        'Welcome to **NoDAW Studio PRO**. Describe the music you want - genre, mood, tempo, key, instruments - and I will compose it. ' +
         'Every result lands in the stem mixer where you can split, sculpt and export it.',
     },
   ])

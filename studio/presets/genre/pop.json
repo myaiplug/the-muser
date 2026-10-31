@@ -15,7 +15,19 @@
     "prompt": "upbeat pop song, catchy hook, bright synths",
     "bpm": 115,
     "duration_s": 30,
-    "lyrics": ""
+    "lyrics": "",
+    "acestep": {
+      "profile": "8gb",
+      "tags": "upbeat modern pop instrumental, catchy bright synth hook, punchy four-on-the-floor kick and claps, plucked chord stabs, bouncy bass, clean polished radio mix, euphoric chorus lift, 115 bpm",
+      "lyrics": "[instrumental]",
+      "bpm": 115,
+      "key_scale": "G major",
+      "time_signature": "4",
+      "infer_step": 8,
+      "guidance_scale": 6.5,
+      "duration_s": 36,
+      "num_candidates": 1
+    }
   },
   "stems": {
     "drums": "mix/punchy-drums",

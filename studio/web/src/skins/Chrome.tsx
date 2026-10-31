@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { isBrowserDemo } from '../api'
 import { audio } from '../audio/engine'
 import { ExportDialog, SystemDrawer, Toasts } from '../components/Dialogs'
+import { BRAND, UPSTREAM, UPSTREAM_URL } from '../brand'
 import { useEasy } from '../studio/EasyContext'
 import { isTyping, useStudio } from '../studio/StudioContext'
 import { MACRO_KEYS, MACRO_META, SHORTCUTS, TOOLS } from '../studio/vibe'
@@ -29,6 +30,7 @@ export function Chrome() {
       }
       if (e.key === 'Escape') {
         if (s.paletteOpen) s.setPaletteOpen(false)
+        else if (s.nodawOpen) s.setNodawOpen(false)
         else if (s.helpOpen) s.setHelpOpen(false)
         else if (s.switcherOpen) s.setSwitcherOpen(false)
         else if (st.showExport) st.setShowExport(false)
@@ -98,6 +100,7 @@ export function Chrome() {
       <SkinPopover />
       {sk.paletteOpen && <CommandPalette />}
       {sk.helpOpen && <HelpSheet />}
+      {sk.nodawOpen && <NoDawPanel />}
       {studio.apiDown && (
         <div className="api-down" role="alert">
           Studio API unreachable. Start it with <code>start_studio.bat</code> (Windows) or <code>python -m studio.server</code>.
@@ -138,6 +141,7 @@ function CommandPalette() {
     c.push({ id: 'engines', group: 'Open', label: 'Engines and 8 GB fit', hint: 'Alt G', run: () => { sk.setDrawerTab('engines'); studio.setShowSystem(true) } })
     c.push({ id: 'system', group: 'Open', label: 'System status', run: () => { sk.setDrawerTab('system'); studio.setShowSystem(true) } })
     c.push({ id: 'export', group: 'Open', label: studio.mode === 'easy' ? (isBrowserDemo() ? 'Export WAV and stems' : 'Export WAV and MP3') : 'Export dialog', hint: 'X', run: () => (studio.mode === 'easy' ? void easy.doExport() : studio.setShowExport(true)) })
+    c.push({ id: 'nodaw', group: 'Open', label: 'NoDAW mode: v2 coming soon', hint: 'v2', run: () => sk.setNodawOpen(true) })
     c.push({ id: 'help', group: 'Open', label: 'Keyboard shortcuts', hint: '?', run: () => sk.setHelpOpen(true) })
     TOOLS.forEach((t) =>
       c.push({
@@ -204,8 +208,39 @@ function CommandPalette() {
   )
 }
 
+const V2_ITEMS: [string, string][] = [
+  ['Sound library', 'Kits, packs, one-shots, FX and instruments you can browse, audition and drop in.'],
+  ['Pattern builder', 'Start from scratch or from templates and build patterns step by step.'],
+  ['Full beat arrangement', 'Lay patterns out on a timeline and arrange a complete beat.'],
+  ['Export', 'Bounce your arrangement to MP3, WAV or FLAC.'],
+  ['Project import', 'Bring FL Studio .flp and REAPER .rpp projects into the NoDAW workshop.'],
+]
+
+/** Teaser only. NoDAW mode (v2) is not built yet; this panel says what is coming. */
+function NoDawPanel() {
+  const { setNodawOpen } = useSkin()
+  const ref = useRef<HTMLButtonElement>(null)
+  useEffect(() => ref.current?.focus(), [])
+  return (
+    <div className="help-wrap" onMouseDown={(e) => e.target === e.currentTarget && setNodawOpen(false)}>
+      <div className="help nodaw" role="dialog" aria-label="NoDAW mode v2 coming soon" data-testid="nodaw-panel">
+        <p className="nodaw-tag">V2 · COMING SOON</p>
+        <h2>NoDAW mode</h2>
+        <p className="nodaw-lead">A beat workshop inside {BRAND}. It is not available yet. Here is what it will do.</p>
+        <ul className="nodaw-list">
+          {V2_ITEMS.map(([t, d]) => (
+            <li key={t}><b>{t}</b><span>{d}</span></li>
+          ))}
+        </ul>
+        <p className="help-foot">Nothing to install or enable. It will appear here when it ships.</p>
+        <div className="nodaw-actions"><button ref={ref} className="btn pri" onClick={() => setNodawOpen(false)}>Got it</button></div>
+      </div>
+    </div>
+  )
+}
+
 function HelpSheet() {
-  const { setHelpOpen } = useSkin()
+  const { setHelpOpen, setNodawOpen } = useSkin()
   return (
     <div className="help-wrap" onMouseDown={(e) => e.target === e.currentTarget && setHelpOpen(false)}>
       <div className="help" role="dialog" aria-label="Keyboard shortcuts" data-testid="help">
@@ -218,7 +253,12 @@ function HelpSheet() {
             </div>
           ))}
         </dl>
-        <p className="help-foot">NoDAW Labs Studio front end, built on The Muser (MIT)</p>
+        <p className="help-about">
+          <b>{BRAND}</b> is a browser studio for making, splitting, shaping and sampling music. Built on{' '}
+          <a href={UPSTREAM_URL} target="_blank" rel="noreferrer">{UPSTREAM}</a> (MIT). Upstream licence and notices are unchanged.
+        </p>
+        <p className="help-about"><button className="btn small" onClick={() => { setHelpOpen(false); setNodawOpen(true) }}>NoDAW mode: v2 coming soon</button></p>
+        <p className="help-foot">{BRAND} · built on {UPSTREAM} (MIT)</p>
       </div>
     </div>
   )

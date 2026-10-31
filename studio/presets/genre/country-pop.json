@@ -16,7 +16,19 @@
     "prompt": "country pop, acoustic strum, steady rock drums",
     "bpm": 104,
     "duration_s": 30,
-    "lyrics": ""
+    "lyrics": "",
+    "acestep": {
+      "profile": "8gb",
+      "tags": "country pop, strummed acoustic guitar, bright twangy electric guitar fills, steady rock drums with tambourine, warm bass, feel-good singalong energy, polished modern Nashville mix, 104 bpm",
+      "lyrics": "[instrumental]",
+      "bpm": 104,
+      "key_scale": "G major",
+      "time_signature": "4",
+      "infer_step": 8,
+      "guidance_scale": 6.0,
+      "duration_s": 36,
+      "num_candidates": 1
+    }
   },
   "stems": {
     "drums": "mix/live-rock-kit",

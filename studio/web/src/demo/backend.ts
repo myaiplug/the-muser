@@ -17,7 +17,7 @@ import enginesFx from './fixtures/engines.json'
 import hardwareFx from './fixtures/hardware.json'
 
 export const DEMO_NOTE = 'Browser demo synthesizer (DEMO). Not AI-generated audio. The local install runs real AI models.'
-const LOCAL_HINT = 'Download The Muser from github.com/myaiplug/the-muser to run this on your own machine.'
+const LOCAL_HINT = 'Install NoDAW Studio PRO from github.com/myaiplug/the-muser to run this on your own machine.'
 
 class Friendly extends Error {
   hint: string
@@ -421,7 +421,7 @@ async function chat(body: { message: string }, onEvent: (e: ChatEvent) => void, 
       const out = await generateTrack({ prompt: msg, duration_s: 16 }, () => undefined)
       onEvent({ event: 'tool_end', data: { name: 'demo_synth', status: 'success', result: {} } })
       onEvent({ event: 'track', data: { track: out.track } })
-      await say(`Done: ${out.track.bpm} BPM, ${out.track.key}. This is DEMO audio from a procedural synth, not AI. Install The Muser locally for real generation.`)
+      await say(`Done: ${out.track.bpm} BPM, ${out.track.key}. This is DEMO audio from a procedural synth, not AI. Install NoDAW Studio PRO locally for real generation.`)
     } catch (e) {
       onEvent({ event: 'tool_end', data: { name: 'demo_synth', status: 'error', result: { error: String(e) } } })
     }

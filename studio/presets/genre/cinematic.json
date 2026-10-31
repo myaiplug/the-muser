@@ -16,7 +16,19 @@
     "prompt": "cinematic orchestral score, epic strings, heroic brass",
     "bpm": 90,
     "duration_s": 40,
-    "lyrics": ""
+    "lyrics": "",
+    "acestep": {
+      "profile": "8gb",
+      "tags": "cinematic orchestral score, sweeping legato strings, powerful low brass, taiko-style percussion hits, rising tension then heroic climax, timpani rolls, epic and emotional, wide concert hall reverb, 90 bpm",
+      "lyrics": "[instrumental]",
+      "bpm": 90,
+      "key_scale": "D minor",
+      "time_signature": "4",
+      "infer_step": 8,
+      "guidance_scale": 6.5,
+      "duration_s": 45,
+      "num_candidates": 1
+    }
   },
   "stems": {
     "drums": "mix/live-rock-kit",

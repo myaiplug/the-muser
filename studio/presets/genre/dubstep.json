@@ -16,7 +16,19 @@
     "prompt": "heavy dubstep edm, wobble bass, half time drums",
     "bpm": 140,
     "duration_s": 30,
-    "lyrics": ""
+    "lyrics": "",
+    "acestep": {
+      "profile": "8gb",
+      "tags": "heavy dubstep, half-time drums with huge snare, growling wobble bass with fast modulation, aggressive sound design, cinematic riser into drop, sub weight, dark and powerful, 140 bpm",
+      "lyrics": "[instrumental]",
+      "bpm": 140,
+      "key_scale": "F minor",
+      "time_signature": "4",
+      "infer_step": 8,
+      "guidance_scale": 7.0,
+      "duration_s": 36,
+      "num_candidates": 1
+    }
   },
   "stems": {
     "drums": "mix/crushed-drums",

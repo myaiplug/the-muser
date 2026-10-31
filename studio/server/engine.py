@@ -32,6 +32,11 @@ class GenerateRequest(BaseModel):
     key: str = ""
     title: str = ""
     force_demo: bool = False
+    # Optional ACE-Step overrides, filled from a genre preset's ``generate.acestep`` block.
+    tags: str = Field("", max_length=1500)
+    infer_step: int | None = Field(None, ge=1, le=200)
+    guidance_scale: float | None = Field(None, ge=0, le=30)
+    time_signature: str = Field("", max_length=4)
 
 
 class StemParams(BaseModel):
@@ -82,12 +87,15 @@ def generate(req: GenerateRequest, job: Job | None = None) -> dict[str, Any]:
         result = execute_tool(
             "generate_audio_acestep_v15",
             {
-                "tags": req.prompt,
+                "tags": req.tags or req.prompt,
                 "lyrics": req.lyrics or "[instrumental]",
                 "duration_s": req.duration_s,
                 "bpm": req.bpm,
                 "key_scale": req.key,
                 "num_candidates": 1,
+                **({"infer_step": req.infer_step} if req.infer_step else {}),
+                **({"guidance_scale": req.guidance_scale} if req.guidance_scale is not None else {}),
+                **({"time_signature": req.time_signature} if req.time_signature else {}),
             },
         )
         if result.get("status") != "success" or not result.get("wav_paths"):

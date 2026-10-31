@@ -15,6 +15,8 @@ export interface SkinCtx {
   setSwitcherOpen: (v: boolean | ((x: boolean) => boolean)) => void
   paletteOpen: boolean
   setPaletteOpen: (v: boolean | ((x: boolean) => boolean)) => void
+  nodawOpen: boolean
+  setNodawOpen: (v: boolean | ((x: boolean) => boolean)) => void
   helpOpen: boolean
   setHelpOpen: (v: boolean | ((x: boolean) => boolean)) => void
   drawerTab: DrawerTab
@@ -41,6 +43,7 @@ export function SkinProvider({ children }: { children: ReactNode }) {
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [nodawOpen, setNodawOpen] = useState(false)
   const [drawerTab, setDrawerTab] = useState<DrawerTab>('engines')
   const [selMacro, setSelMacro] = useState<MacroKey>('energy')
   const cur = useRef(skin)
@@ -80,8 +83,8 @@ export function SkinProvider({ children }: { children: ReactNode }) {
   )
 
   const v = useMemo<SkinCtx>(
-    () => ({ skin, setSkin, cycleSkin, preload, switcherOpen, setSwitcherOpen, paletteOpen, setPaletteOpen, helpOpen, setHelpOpen, drawerTab, setDrawerTab, selMacro, setSelMacro }),
-    [skin, setSkin, cycleSkin, preload, switcherOpen, paletteOpen, helpOpen, drawerTab, selMacro],
+    () => ({ skin, setSkin, cycleSkin, preload, switcherOpen, setSwitcherOpen, paletteOpen, setPaletteOpen, nodawOpen, setNodawOpen, helpOpen, setHelpOpen, drawerTab, setDrawerTab, selMacro, setSelMacro }),
+    [skin, setSkin, cycleSkin, preload, switcherOpen, paletteOpen, nodawOpen, helpOpen, drawerTab, selMacro],
   )
   return <Ctx.Provider value={v}>{children}</Ctx.Provider>
 }

@@ -719,6 +719,56 @@ for name, desc, tags, chain in [
 
 
 # ---------------------------------------------------------------- genre starters (Easy vibes)
+# ACE-Step 1.5 settings tuned per genre for the 8 GB profile (src/utils/vram_profile.py:
+# 2B turbo DiT, 0.6B LM on the pt backend, CPU offload, INT8). The turbo DiT is distilled for 8 steps, so
+# infer_step stays 8; guidance_scale is applied by non-turbo DiTs. Durations stay short because every extra
+# second costs offloaded-DiT time on a 2080 Super. All tracks are instrumental unless the user adds lyrics.
+ACESTEP_8GB = {
+    "Lo-fi Chill": ("lo-fi hip hop instrumental, dusty vinyl crackle, warm tape-saturated Rhodes electric piano playing mellow seventh chords, soft laid-back boom bap drums with lazy swing, round sub bass, gentle jazz guitar licks, rainy night mood, relaxed and nostalgic, wide warm mix", "A minor", "4", 8, 5.0, 40),
+    "Hip Hop": ("boom bap hip hop instrumental, hard punchy kick and crisp snare, dusty soul sample chops with vinyl texture, deep round bass line, head-nodding groove with slight swing, 90s New York feel, gritty analog mix", "F minor", "4", 8, 6.0, 36),
+    "Trap": ("dark modern trap instrumental, heavy distorted 808 bass with long glide, rolling hi-hats with triplet stutters and fast rolls, crisp snares and claps, eerie bell and pluck melody, sparse minor key atmosphere, club-ready loud mix", "F# minor", "4", 8, 7.0, 32),
+    "UK Drill": ("UK drill instrumental, sliding 808 bass, dark minor piano melody, skippy triplet hi-hats, sharp snare on the third beat, cold ominous London night mood, tight dry mix", "G minor", "4", 8, 7.0, 32),
+    "Phonk": ("Memphis phonk instrumental, distorted saturated 808, chopped cowbell melody, aggressive lo-fi trap drums, dark vocal chop samples, gritty tape distortion, drift-car energy", "D minor", "4", 8, 7.0, 32),
+    "Techno": ("driving techno, relentless four-on-the-floor kick, off-beat open hi-hats, rumbling rolling bassline, hypnotic filtered synth stabs that evolve slowly, dark warehouse atmosphere, tension building with filter sweeps, powerful club mix", "A minor", "4", 8, 6.0, 40),
+    "House": ("deep house groove, four-on-the-floor kick with swung hi-hats and claps, warm Rhodes and organ chord stabs, round plucked bass line, smooth late-night club feel, soft pads, groovy and uplifting", "A minor", "4", 8, 6.0, 40),
+    "EDM Anthem": ("festival EDM anthem, euphoric supersaw chords, big sidechain-pumping drop, rising white noise riser build-up, punchy kick, bright plucked lead hook, emotional major key melody, huge wide mix", "C major", "4", 8, 7.0, 40),
+    "Synthwave": ("retro 1980s synthwave, gated reverb snare, analog pulsing arpeggio bass, lush detuned Juno-style pads, neon night drive mood, soaring lead synth melody, warm tape sheen", "A minor", "4", 8, 6.0, 40),
+    "Chillwave": ("chillwave, hazy dreamy synths, washed-out reverb, slow warm arpeggios, soft side-chained pads, relaxed drum machine groove, summer nostalgia, lo-fi tape warble", "E major", "4", 8, 5.0, 40),
+    "Ambient": ("ambient soundscape, slow evolving pads, deep shimmering reverb, soft textural drones, distant piano notes, no drums, calm and spacious, gentle movement, meditative", "D major", "4", 8, 4.5, 45),
+    "Cinematic": ("cinematic orchestral score, sweeping legato strings, powerful low brass, taiko-style percussion hits, rising tension then heroic climax, timpani rolls, epic and emotional, wide concert hall reverb", "D minor", "4", 8, 6.5, 45),
+    "Jazz Lounge": ("smooth jazz lounge trio, brushed drums with ride cymbal swing, walking upright bass, warm piano comping with extended seventh and ninth chords, relaxed late-night club, intimate room sound", "Bb major", "4", 8, 5.0, 40),
+    "R&B Slow Jam": ("smooth R&B slow jam instrumental, lush electric piano and warm pads, soft finger-snap snare, deep sub bass, silky chord progression with ninth chords, sensual late-night mood, polished warm mix", "Eb major", "4", 8, 5.5, 40),
+    "Pop": ("upbeat modern pop instrumental, catchy bright synth hook, punchy four-on-the-floor kick and claps, plucked chord stabs, bouncy bass, clean polished radio mix, euphoric chorus lift", "G major", "4", 8, 6.5, 36),
+    "Rock": ("energetic rock band, overdriven rhythm guitars playing power chords, live acoustic drums with big snare, punchy electric bass, driving eighth-note groove, anthemic and raw, room ambience", "E minor", "4", 8, 6.5, 36),
+    "Metal": ("heavy metal, down-tuned palm-muted chugging riffs, double bass drum, tight aggressive snare, high-gain guitar harmonies, dark and powerful, thick low end", "D minor", "4", 8, 7.0, 36),
+    "Afrobeats": ("afrobeats groove, log drum bass line, shaker and congas with syncopated percussion, bright plucked guitar, warm sunny synth chords, bouncy mid-tempo dance rhythm, joyful", "F major", "4", 8, 6.0, 36),
+    "Reggaeton": ("reggaeton dembow pop beat, classic dembow kick and snare pattern, latin percussion, catchy plucked synth hook, deep punchy bass, warm club energy", "A minor", "4", 8, 6.5, 36),
+    "Drum and Bass": ("liquid drum and bass, fast two-step breakbeat at 174 bpm, deep rolling sub bass, atmospheric pads, soulful chord stabs, crisp snares, uplifting and flowing energy", "F minor", "4", 8, 6.5, 36),
+    "Dubstep": ("heavy dubstep, half-time drums with huge snare, growling wobble bass with fast modulation, aggressive sound design, cinematic riser into drop, sub weight, dark and powerful", "F minor", "4", 8, 7.0, 36),
+    "Country Pop": ("country pop, strummed acoustic guitar, bright twangy electric guitar fills, steady rock drums with tambourine, warm bass, feel-good singalong energy, polished modern Nashville mix", "G major", "4", 8, 6.0, 36),
+    "Indie Folk": ("indie folk rock, fingerpicked acoustic guitar, soft brushed drums, warm upright bass, gentle harmonium, intimate and heartfelt, airy room sound", "D major", "4", 8, 5.5, 40),
+    "Gospel Soul": ("gospel soul, Hammond organ with rotary speaker, warm choir pads, uplifting piano chords, gentle shuffle drums, rich bass, joyful and reverent, live church room warmth", "Ab major", "4", 8, 5.5, 40),
+}
+
+
+def _acestep(name, bpm):
+    tags, key, sig, steps, cfg, dur = ACESTEP_8GB[name]
+    return {
+        "acestep": {
+            "profile": "8gb",
+            "tags": f"{tags}, {bpm} bpm",
+            "lyrics": "[instrumental]",
+            "bpm": bpm,
+            "key_scale": key,
+            "time_signature": sig,
+            "infer_step": steps,
+            "guidance_scale": cfg,
+            "duration_s": dur,
+            "num_candidates": 1,
+        }
+    }
+
+
 def genre(
     name, emoji, prompt, desc, tags, easy, bpm, stems, master, macros, duration=30, lyrics=""
 ):
@@ -730,7 +780,13 @@ def genre(
         "starter",
         easy=easy,
         icon=emoji,
-        generate={"prompt": prompt, "bpm": bpm, "duration_s": duration, "lyrics": lyrics},
+        generate={
+            "prompt": prompt,
+            "bpm": bpm,
+            "duration_s": duration,
+            "lyrics": lyrics,
+            **(_acestep(name, bpm) if name in ACESTEP_8GB else {}),
+        },
         stems=stems,
         master=master,
         macros=macros,

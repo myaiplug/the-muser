@@ -16,7 +16,19 @@
     "prompt": "lofi hip hop beat, dusty vinyl, mellow rhodes, rainy night",
     "bpm": 78,
     "duration_s": 30,
-    "lyrics": ""
+    "lyrics": "",
+    "acestep": {
+      "profile": "8gb",
+      "tags": "lo-fi hip hop instrumental, dusty vinyl crackle, warm tape-saturated Rhodes electric piano playing mellow seventh chords, soft laid-back boom bap drums with lazy swing, round sub bass, gentle jazz guitar licks, rainy night mood, relaxed and nostalgic, wide warm mix, 78 bpm",
+      "lyrics": "[instrumental]",
+      "bpm": 78,
+      "key_scale": "A minor",
+      "time_signature": "4",
+      "infer_step": 8,
+      "guidance_scale": 5.0,
+      "duration_s": 40,
+      "num_candidates": 1
+    }
   },
   "stems": {
     "drums": "mix/dusty-drums",

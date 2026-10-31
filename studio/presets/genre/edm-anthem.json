@@ -16,7 +16,19 @@
     "prompt": "festival edm anthem, big supersaw drop, euphoric",
     "bpm": 128,
     "duration_s": 30,
-    "lyrics": ""
+    "lyrics": "",
+    "acestep": {
+      "profile": "8gb",
+      "tags": "festival EDM anthem, euphoric supersaw chords, big sidechain-pumping drop, rising white noise riser build-up, punchy kick, bright plucked lead hook, emotional major key melody, huge wide mix, 128 bpm",
+      "lyrics": "[instrumental]",
+      "bpm": 128,
+      "key_scale": "C major",
+      "time_signature": "4",
+      "infer_step": 8,
+      "guidance_scale": 7.0,
+      "duration_s": 40,
+      "num_candidates": 1
+    }
   },
   "stems": {
     "drums": "mix/punchy-drums",

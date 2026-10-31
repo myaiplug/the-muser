@@ -333,14 +333,24 @@ def easy_make(req: EasyMake) -> dict:
     def run(job: Job) -> dict:
         gen = g["generate"]
         prompt = f"{req.vibe.strip()}, {gen['prompt']}" if req.vibe.strip() else gen["prompt"]
+        ace = gen.get("acestep") or {}
+        # With the real model, use the genre's tuned ACE-Step tags; the user's own words come first.
+        tags = ""
+        if ace.get("tags"):
+            tags = (f"{req.vibe.strip()}, {ace['tags']}" if req.vibe.strip() else ace["tags"])[:1500]
         job.message = f"Writing a {g['name']} track..."
         res = engine.generate(
             engine.GenerateRequest(
                 prompt=prompt[:2000],
                 lyrics=req.lyrics or gen.get("lyrics", ""),
-                duration_s=req.duration_s or gen.get("duration_s", 30),
+                duration_s=req.duration_s or ace.get("duration_s") or gen.get("duration_s", 30),
                 bpm=gen.get("bpm"),
+                key=str(ace.get("key_scale") or ""),
                 title=f"{g['name']} idea",
+                tags=tags,
+                infer_step=ace.get("infer_step"),
+                guidance_scale=ace.get("guidance_scale"),
+                time_signature=str(ace.get("time_signature") or ""),
             ),
             job,
         )
