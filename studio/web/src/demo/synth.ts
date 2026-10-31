@@ -120,7 +120,13 @@ const VOICES: Record<ChordVoice, V.Voice> = {
 }
 const mod12 = (n: number) => ((n % 12) + 12) % 12
 
+const SHOT_GAIN: Record<string, number> = { hat: 2, ohat: 1.8, ride: 2.6, cowbell: 0.45, shaker: 1.3 }
 function makeShot(name: string, r: Rng): Float32Array {
+  const y = rawShot(name, r), g = SHOT_GAIN[name.split(':')[0]]
+  if (g) for (let i = 0; i < y.length; i++) y[i] *= g
+  return y
+}
+function rawShot(name: string, r: Rng): Float32Array {
   const [base, arg] = name.split(':')
   switch (base) {
     case 'kick': return V.kick(KICKS[arg] ?? KICKS.boom)
