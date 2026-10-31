@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { isBrowserDemo } from '../../api'
 import '@fontsource/barlow-condensed/500.css'
 import '@fontsource/barlow-condensed/600.css'
 import '@fontsource/barlow-condensed/700.css'
@@ -333,7 +334,7 @@ function EasyRight() {
           : easy.analysis ? <span>MEASURED <b>{easy.analysis.lufs?.toFixed(1) ?? '--'}</b> LUFS · <b>{easy.analysis.true_peak_db.toFixed(1)}</b> dBTP</span>
           : <span className="dim">NO CLIPPING. PICK A TARGET.</span>}
       </div>
-      <button className="cc-export" data-testid="export" disabled={lock} onClick={() => void easy.doExport()}><span>EXPORT WAV + MP3</span><kbd>X</kbd></button>
+      <button className="cc-export" data-testid="export" disabled={lock} onClick={() => void easy.doExport()}><span>{isBrowserDemo() ? 'EXPORT WAV + STEMS' : 'EXPORT WAV + MP3'}</span><kbd>X</kbd></button>
       {easy.files && (
         <div className="cc-files" data-testid="files">
           {Object.entries(easy.files).map(([k, url]) => <a key={k} href={url} download>{decodeURIComponent(url.split('/').pop() ?? k)}<i>{k.toUpperCase()}</i></a>)}

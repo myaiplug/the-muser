@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { isBrowserDemo } from '../api'
 import { audio } from '../audio/engine'
 import { ExportDialog, SystemDrawer, Toasts } from '../components/Dialogs'
 import { useEasy } from '../studio/EasyContext'
@@ -136,7 +137,7 @@ function CommandPalette() {
     c.push({ id: 'redo', group: 'Edit', label: 'Redo', hint: 'Ctrl Y', run: () => studio.history.redo() })
     c.push({ id: 'engines', group: 'Open', label: 'Engines and 8 GB fit', hint: 'Alt G', run: () => { sk.setDrawerTab('engines'); studio.setShowSystem(true) } })
     c.push({ id: 'system', group: 'Open', label: 'System status', run: () => { sk.setDrawerTab('system'); studio.setShowSystem(true) } })
-    c.push({ id: 'export', group: 'Open', label: studio.mode === 'easy' ? 'Export WAV and MP3' : 'Export dialog', hint: 'X', run: () => (studio.mode === 'easy' ? void easy.doExport() : studio.setShowExport(true)) })
+    c.push({ id: 'export', group: 'Open', label: studio.mode === 'easy' ? (isBrowserDemo() ? 'Export WAV and stems' : 'Export WAV and MP3') : 'Export dialog', hint: 'X', run: () => (studio.mode === 'easy' ? void easy.doExport() : studio.setShowExport(true)) })
     c.push({ id: 'help', group: 'Open', label: 'Keyboard shortcuts', hint: '?', run: () => sk.setHelpOpen(true) })
     TOOLS.forEach((t) =>
       c.push({

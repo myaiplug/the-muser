@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { isBrowserDemo } from '../../api'
 import '@fontsource/geist-sans/300.css'
 import '@fontsource/geist-sans/400.css'
 import '@fontsource/geist-sans/600.css'
@@ -214,7 +215,7 @@ function Finish() {
           : easy.analysis ? <><span>MEASURED</span><b>{easy.analysis.lufs?.toFixed(1) ?? '--'}</b><span>LUFS</span><b>{easy.analysis.true_peak_db.toFixed(1)}</b><span>dBTP</span></>
           : <span className="dim">NO CLIPPING. PICK A TARGET TO MASTER.</span>}
       </div>
-      <button className="ca-export" data-testid="export" disabled={lock} onClick={() => void easy.doExport()}>EXPORT WAV + MP3<kbd>X</kbd></button>
+      <button className="ca-export" data-testid="export" disabled={lock} onClick={() => void easy.doExport()}>{isBrowserDemo() ? 'EXPORT WAV + STEMS' : 'EXPORT WAV + MP3'}<kbd>X</kbd></button>
       {(easy.files || easy.midi) && (
         <div className="ca-files" data-testid="files">
           {easy.files && Object.entries(easy.files).map(([k, url]) => <a key={k} href={url} download>{decodeURIComponent(url.split('/').pop() ?? k)}<span>{k.toUpperCase()}</span></a>)}

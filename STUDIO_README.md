@@ -1,5 +1,7 @@
 # The Muser Studio: all-in-one AI audio, local and simple
 
+> **[Live demo: https://the-muser.vercel.app](https://the-muser.vercel.app)** (browser demo mode). Runs entirely in your browser with a small built-in synth, so audio is **not** AI-generated and stem splitting is simulated. Real AI generation and separation need the local install (see below).
+
 A premium studio front end for [The Muser](https://github.com/noah-chelednik/the-muser)
 (the open-source, local AI music composer by Noah Chelednik, MIT licensed).
 This fork puts the best open-source audio AI tools under one roof, picks the right one for your PC
@@ -7,6 +9,25 @@ automatically, and hides every knob until you ask for it. **Nothing in `src/` wa
 the original CLI and Gradio UI still work.
 
 ![Cathode skin, Easy mode](screenshots/skins/cathode-easy.png)
+
+---
+
+## Live demo (browser demo mode)
+
+[https://the-muser.vercel.app](https://the-muser.vercel.app) is a static build of `studio/web` on Vercel. There is no Python server behind it, so on startup the app
+probes `/api/status`; when nothing answers it switches to a built-in browser backend (`src/demo/`) and shows a
+**BROWSER DEMO** ribbon and badge. Add `?demo=1` to force this mode against a local server.
+
+What works in your browser: all three skins, Easy and Advanced modes, the 105 factory presets, macros, finish targets,
+per-stem mixer and FX chains, undo/redo, uploads (WAV and anything your browser can decode), WAV and stems-zip export.
+Audio comes from a small procedural synth plus real DSP (EQ, compression, reverb, limiter, LUFS metering).
+
+What is simulated or missing, on purpose: the music is **not AI-generated**, "Split stems" uses the synth's own stems
+(or a simple frequency-band split for uploads), engines and the hardware panel are simulated, and there is no MP3/FLAC
+export, LLM chat or audio-to-MIDI for uploads. Tracks live in memory only, so a reload clears them. For real AI models,
+use the local install ([Windows setup](#windows-setup-step-by-step)).
+
+Redeploy: `cd studio/web && npx vercel deploy --prod --scope nodawlabs` (see `studio/web/vercel.json`).
 
 ---
 

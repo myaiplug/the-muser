@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { isBrowserDemo } from '../../api'
 import '@fontsource/instrument-serif/400.css'
 import '@fontsource/instrument-serif/400-italic.css'
 import '@fontsource/instrument-sans/400.css'
@@ -207,7 +208,7 @@ function RightEasy() {
           : easy.analysis ? <span>Measured <b>{easy.analysis.lufs?.toFixed(1) ?? '--'} LUFS</b> · <b>{easy.analysis.true_peak_db.toFixed(1)} dBTP</b></span>
           : <span className="dim">No clipping. Pick a target to master.</span>}
       </div>
-      <button className="cb-export" data-testid="export" disabled={lock} onClick={() => void easy.doExport()}><span>Export WAV + MP3</span><em>X</em></button>
+      <button className="cb-export" data-testid="export" disabled={lock} onClick={() => void easy.doExport()}><span>{isBrowserDemo() ? 'Export WAV + stems' : 'Export WAV + MP3'}</span><em>X</em></button>
       {(easy.files || easy.midi) && (
         <div className="cb-files" data-testid="files">
           {easy.files && Object.entries(easy.files).map(([k, url]) => <a key={k} href={url} download>{decodeURIComponent(url.split('/').pop() ?? k)}<i>{k}</i></a>)}

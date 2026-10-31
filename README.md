@@ -1,5 +1,7 @@
 # The Muser
 
+> **[Live demo: https://the-muser.vercel.app](https://the-muser.vercel.app)** (browser demo mode). Runs entirely in your browser with a small built-in synth, so audio is **not** AI-generated and stem splitting is simulated. Real AI generation and separation need the local install (see below).
+
 **The open-source alternative to Suno and ElevenLabs Music.**
 Run locally. Own everything. No subscriptions, no ToS, no limits.
 
