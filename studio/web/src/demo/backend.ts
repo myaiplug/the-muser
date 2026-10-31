@@ -235,8 +235,8 @@ const stemSources = (rec: Rec): { name: string; audio: D.Audio }[] => {
 }
 
 // ------------------------------------------------------------------ operations
-async function generateTrack(o: { prompt: string; duration_s: number; bpm?: number | null; key?: string; title?: string }, msg: (m: string) => void): Promise<{ track: Track; engine: string }> {
-  const spec = parsePrompt(o.prompt, o.bpm, o.key, o.duration_s)
+async function generateTrack(o: { prompt: string; duration_s: number; bpm?: number | null; key?: string; title?: string; genre?: string | null }, msg: (m: string) => void): Promise<{ track: Track; engine: string }> {
+  const spec = parsePrompt(o.prompt, o.bpm, o.key, o.duration_s, o.genre)
   msg(`Browser demo synth: ${spec.genre}, ${spec.bpm} BPM, ${keyName(spec)}`)
   const r = await renderSpec(spec, (p, m) => msg(m + ` (${Math.round(p * 100)}%)`))
   const rec = addTrack(
@@ -441,7 +441,7 @@ const status = (): Status => ({
     ollama: cap('ollama', 'Ollama LLM', false, 'No language model in the browser demo.', 'Install the local app and Ollama (ollama.com).'),
     gpu: cap('gpu', 'NVIDIA GPU', false, 'The browser demo does not use a GPU.', 'AI generation wants an NVIDIA GPU. 8 GB runs ACE-Step 1.5 with low-memory settings.'),
     acestep: cap('acestep', 'ACE-Step', false, 'Needs the local install.', 'github.com/myaiplug/the-muser'),
-    demucs: cap('demucs', 'Demucs stems', false, 'Browser demo splits use the synth sources or a frequency-band crossover.', 'The local install runs real separators.'),
+    demucs: cap('demucs', 'Demucs stems', false, 'Generated demo songs expose their own synth tracks. The Split tab runs Demucs (ONNX) in this tab on your own audio.', 'The local install runs the full Demucs and Roformer stack.'),
   },
   ollama_models: [], llm_models: [],
   browser_demo: true,
@@ -562,7 +562,7 @@ export function createDemoApi(): Api {
       const gid = (b.genre_id as string) || matchVibe(vibe)
       const g = presetGet(gid), gen = g.generate!
       m(`Writing a ${g.name} loop with the browser demo synth...`)
-      const res = await generateTrack({ prompt: vibe ? `${vibe}, ${gen.prompt}` : gen.prompt, duration_s: Number(b.duration_s ?? gen.duration_s ?? 30), bpm: gen.bpm, title: `${g.name} idea` }, m)
+      const res = await generateTrack({ prompt: vibe ? `${vibe}, ${gen.prompt}` : gen.prompt, duration_s: Number(b.duration_s ?? gen.duration_s ?? 30), bpm: gen.bpm, title: `${g.name} idea`, genre: gid }, m)
       const root = need(res.track.id)
       root.pub.meta = { ...root.pub.meta, genre_id: gid, easy: true }
       m('Splitting into stems so the sliders can shape each part...')

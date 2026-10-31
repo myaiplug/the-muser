@@ -14,7 +14,7 @@ export function DemoRibbon() {
   return (
     <div className="demo-ribbon" role="note" data-testid="demo-ribbon">
       <b>BROWSER DEMO</b>
-      <span>Sound comes from a small built-in synth, not AI. Stem splits are simulated. Everything stays in your browser.</span>
+      <span>Generated sound comes from a built-in synthesizer, not AI. Split on uploaded audio runs a real separation model in this tab. Everything stays in your browser.</span>
       <a href={REPO_URL} target="_blank" rel="noreferrer">Real AI needs the local install</a>
     </div>
   )
