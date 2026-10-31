@@ -289,7 +289,7 @@ class StudioAudio {
 
   currentTime(): number {
     if (!this.ctx || !this.playing || !this.sourcesLive) return this.offset
-    const t = this.ctx.currentTime - this.startedAt
+    const t = Math.max(0, this.ctx.currentTime - this.startedAt)
     const r = this.region
     if (this.loop && r && r.end > r.start) return t < r.end ? t : r.start + ((t - r.start) % (r.end - r.start))
     if (this.loop && this.duration > 0) return t % this.duration
@@ -321,7 +321,7 @@ class StudioAudio {
     const ctx = this.ctx!
     if (!this.playing || this.sourcesLive) return
     const r = this.region
-    let off = this.offset >= this.duration - 0.01 ? 0 : this.offset
+    let off = this.offset >= this.duration - 0.01 ? 0 : Math.max(0, this.offset)
     if (r && (off < r.start || off >= r.end)) off = r.start
     const when = ctx.currentTime + 0.03
     const regionLoop = !!(this.loop && r)
@@ -397,7 +397,7 @@ class StudioAudio {
     if (this.playing) {
       this.killSources()
       this.playing = false
-      this.offset = t
+      this.offset = Math.max(0, t)
       this.play()
     }
     this.emit()
@@ -411,7 +411,7 @@ class StudioAudio {
     if (was) {
       this.killSources()
       this.playing = false
-      this.offset = t
+      this.offset = Math.max(0, t)
       this.play()
     }
     this.emit()

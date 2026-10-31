@@ -88,10 +88,11 @@ export function SplitTab() {
       })
       setCached((c) => ({ ...c, [def.id]: true }))
       setPhase('separate')
+      // the worker takes ownership of these buffers, so keep a copy of the mix first
+      const mixBlob = encodeWav([left.slice(0), right.slice(0)], 44100, 16)
       const res = await sep.separate(left, right, (p) => { setProg(p); if (p.notice) setNotice(p.notice) })
       const files = Object.entries(res.stems).map(([name, [l, r]]) => ({ name, blob: encodeWav([l, r], res.sampleRate, 16) }))
       const id = `split-${Date.now().toString(36)}`
-      const mixBlob = encodeWav([left.slice(0), right.slice(0)], 44100, 16)
       const track: Track = {
         id,
         title: `${srcName} (stems)`,
