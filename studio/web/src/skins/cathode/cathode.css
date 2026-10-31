@@ -170,3 +170,4 @@
 .cc-dockbody .deck{ height:auto; }
 .cc-strips .lane{ grid-template-rows:auto minmax(54px,1fr) auto; } .cc-strips .lane-wave{ height:auto; min-height:54px; }
 .cc-pre-side{ padding:10px 12px !important; gap:6px !important; } .cc-pre-side .cc-cats button{ padding:4px 7px !important; font-size:8.5px !important; } .cc-cats.docks{ margin-bottom:2px; }
+[data-skin=cathode] .toasts{ bottom:auto; top:64px; }
