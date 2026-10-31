@@ -63,7 +63,7 @@ async function run(skin, devName) {
   page.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text())) errors.push(m.text().slice(0, 200)) })
   page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)))
   await page.route('**/__clip.wav', (r) => r.fulfill({ body: fs.readFileSync(CLIP), contentType: 'audio/wav', headers: { 'Cross-Origin-Resource-Policy': 'same-origin' } }))
-  await page.addInitScript((s) => { if (!sessionStorage.getItem('v3init')) { localStorage.clear(); sessionStorage.setItem('v3init', '1') } localStorage.setItem('muse.skin', s); localStorage.setItem('muser.skin', s) }, skin)
+  await page.addInitScript((s) => { localStorage.setItem('muse.skin', s); localStorage.setItem('muser.skin', s) }, skin)
   const T = (id) => page.locator(`[data-testid=${id}]`).first()
   const press = (loc) => (mobile ? loc.tap() : loc.click())
   const shot = async (n) => { if (SHOTS) await page.screenshot({ path: `${SHOTS}/${tag}-${n}.png` }) }
@@ -72,7 +72,9 @@ async function run(skin, devName) {
   const overflow = () => page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth }))
   const tab = async (name) => { const b = page.getByRole('tab', { name, exact: true }).first(); await b.scrollIntoViewIfNeeded().catch(() => {}); await press(b); await page.waitForTimeout(500) }
 
-  await page.goto(`${BASE}/?demo=1`, { waitUntil: 'networkidle' })
+  await page.goto(`${BASE}/?demo=1`, { waitUntil: 'domcontentloaded' })
+  await page.evaluate((s) => { for (const k of Object.keys(localStorage)) if (!/skin/.test(k)) localStorage.removeItem(k); localStorage.setItem('muser.skin', s) }, skin)
+  await page.reload({ waitUntil: 'networkidle' })
   await T('prompt').waitFor({ timeout: 90000 })
 
   await step('skin applied, cross-origin isolated', async () => {

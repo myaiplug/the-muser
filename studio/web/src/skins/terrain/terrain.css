@@ -233,3 +233,6 @@
 [data-skin=terrain] .toasts{ bottom:auto; top:64px; }
 @media (max-width:1280px){ .ca-read .ca-n:nth-child(-n+2){ display:none; } .ca-brand i{ display:none; } }
 .ca-brand b,.ca-brand i{ white-space:nowrap; } .ca-brand i{ display:none; } @media (min-width:1500px){ .ca-brand i{ display:inline; } }
+
+/* mobile: keep the last controls clear of the fixed demo ribbon and the floating transport */
+@media (max-width:860px){ .ca-main{ padding-bottom:calc(36px + env(safe-area-inset-bottom)); } body.browser-demo .ca-main{ padding-bottom:calc(52px + env(safe-area-inset-bottom)); } }
