@@ -40,6 +40,8 @@ class StudioAudio {
   private pendingPlay = false
   private stopAt = 0
   playing = false
+  /** Bumped whenever a channel buffer is swapped (sampler edits) so waveforms can redraw. */
+  bufferRev = 0
   loop = true
   region: Region | null = null
   duration = 0
@@ -233,6 +235,7 @@ class StudioAudio {
     const t = this.currentTime()
     if (was) this.killSources()
     c.buffer = next
+    this.bufferRev++
     this.duration = Math.max(0, ...[...this.channels.values()].map((x) => x.buffer.duration))
     this.offset = Math.min(t, this.duration)
     if (was) { this.playing = false; this.play() }

@@ -175,6 +175,11 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelKey])
 
+  useEffect(() => {
+    let rev = audio.bufferRev
+    return audio.subscribe(() => { if (audio.bufferRev !== rev) { rev = audio.bufferRev; setBuffersVersion((v) => v + 1) } })
+  }, [])
+
   const { mixer, master } = history.state
   useEffect(() => {
     const anySolo = channels.some((c) => mixer[c.id]?.solo)

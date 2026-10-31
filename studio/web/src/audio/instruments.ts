@@ -1,6 +1,7 @@
 /** Synthesized drum pads, a polyphonic subtractive synth, and a step sequencer. */
 import type { PadParams, SynthParams } from '../types'
 import { audio } from './engine'
+import { playPadSample } from './samples'
 
 export type PadDef = { name: string; key: string; color: string; play: (t: number, p: PadParams) => void }
 
@@ -116,7 +117,7 @@ function riser(t: number, p: PadParams) {
   s.stop(t + 1.6)
 }
 
-export const PADS: PadDef[] = [
+const BASE_PADS: PadDef[] = [
   { name: 'Kick', key: '1', color: '#ff4d6d', play: (t, p) => kick(t, p) },
   { name: 'Snare', key: '2', color: '#ffb703', play: snare },
   { name: 'Clap', key: '3', color: '#ffd166', play: (t, p) => noiseHit(t, p, { hp: 900, bp: 1500, decay: 0.18, claps: 3, gain: 0.7 }) },
@@ -134,6 +135,9 @@ export const PADS: PadDef[] = [
   { name: 'Zap', key: 'c', color: '#5ee7c9', play: (t, p) => tone(t, p, 220, 'sawtooth', 0.2, 8, 0.3) },
   { name: 'Riser', key: 'v', color: '#3ef0ff', play: riser },
 ]
+
+/** Pads play their own sample when the sampler has put one there, otherwise the synthesized drum. */
+export const PADS: PadDef[] = BASE_PADS.map((d, i) => ({ ...d, play: (t, p) => { if (!playPadSample(i, t, p)) d.play(t, p) } }))
 
 // ---------------------------------------------------------------------------
 // Polyphonic synth

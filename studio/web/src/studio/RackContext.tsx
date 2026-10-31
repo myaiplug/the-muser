@@ -8,7 +8,7 @@ export type StemState = { chain: FxItem[]; gain_db: number; pan: number; mute: b
 export type ChainsState = { stems: Record<string, StemState>; master: FxItem[] }
 export const EMPTY: StemState = { chain: [], gain_db: 0, pan: 0, mute: false, solo: false }
 export const MASTER = '__master__'
-export const TABS = ['Chains', 'Generate', 'Separate', 'Master', 'Presets', 'A/B'] as const
+export const TABS = ['Live FX', 'Split', 'Sampler', 'Chains', 'Generate', 'Separate', 'Master', 'Presets', 'A/B'] as const
 export type Tab = (typeof TABS)[number]
 
 /** Small snapshot undo stack for the chain editor (Ctrl+Z still drives the live mixer). */
@@ -76,7 +76,7 @@ export const useRack = () => {
 
 export function RackProvider({ children }: { children: ReactNode }) {
   const { current: track, toast, loadTrack } = useStudio()
-  const [tab, setTab] = useState<Tab>('Chains')
+  const [tab, setTab] = useState<Tab>('Live FX')
   const [plugins, setPlugins] = useState<Record<string, PluginSpec>>({})
   const [targets, setTargets] = useState<Record<string, FinishTarget>>({})
   const [engines, setEngines] = useState<EngineInfo[]>([])

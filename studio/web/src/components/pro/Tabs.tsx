@@ -18,7 +18,7 @@ export function roleFor(name: string): string {
 export type RunFn = <T>(label: string, start: () => Promise<{ job_id: string }>) => Promise<T | null>
 export type Common = { run: RunFn; onTrack: (t: Track) => void; toast: (t: string, k?: 'info' | 'error' | 'ok') => void }
 
-function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <label className="field">
       <span>{label}</span>

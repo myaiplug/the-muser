@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { PADS, noteOff, noteOn, sequencer } from '../audio/instruments'
+import { padBank } from '../audio/samples'
 import { audio } from '../audio/engine'
 import type { History } from '../state/history'
 import type { PadParams, Project, SynthParams } from '../types'
@@ -19,6 +20,8 @@ const typing = (e: KeyboardEvent) => {
 
 export function Deck({ history }: Props) {
   const [tab, setTab] = useState<'pads' | 'keys'>('pads')
+  useSyncExternalStore(padBank.subscribe, padBank.version)
+  const padName = (i: number) => padBank.get(i)?.name ?? PADS[i].name
   const [hitPads, setHitPads] = useState<Set<number>>(new Set())
   const [held, setHeld] = useState<Set<number>>(new Set())
   const [step, setStep] = useState(-1)
@@ -162,7 +165,7 @@ export function Deck({ history }: Props) {
                 className={`pad ${hitPads.has(i) ? 'hit' : ''} ${selPad === i ? 'sel' : ''}`}
                 onPointerDown={(e) => { e.preventDefault(); hitPad(i); setSelPad(i) }}
               >
-                <span className="pad-name">{p.name}</span>
+                <span className="pad-name">{padName(i)}</span>
                 <span className="pad-key">{p.key.toUpperCase()}</span>
               </button>
             ))}
@@ -203,7 +206,7 @@ export function Deck({ history }: Props) {
             <div className="seq-rows">
               {[0, 1, 4, 5, 2, 11, 12, selPad].filter((v, i, a) => a.indexOf(v) === i).map((pad) => (
                 <div className={`seq-row ${pad === selPad ? 'sel' : ''}`} key={pad}>
-                  <span className="seq-label" onClick={() => setSelPad(pad)}>{PADS[pad].name}</span>
+                  <span className="seq-label" onClick={() => setSelPad(pad)}>{padName(pad)}</span>
                   {proj.pattern[pad].map((on, st) => (
                     <button
                       key={st}

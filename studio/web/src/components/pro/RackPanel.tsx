@@ -2,16 +2,20 @@ import { useStudio } from '../../studio/StudioContext'
 import { MASTER, TABS, useRack, EMPTY, type Tab } from '../../studio/RackContext'
 import { ChainEditor } from './ChainEditor'
 import { PresetBrowser } from './PresetBrowser'
+import { isBrowserDemo } from '../../api'
+import { LiveFxTab } from './LiveFxTab'
+import { SamplerTab } from './SamplerTab'
+import { SplitTab } from './SplitTab'
 import { ABTab, GenerateTab, MasterTab, SeparateTab } from './Tabs'
 
 /**
- * The advanced rack: Chains, Generate, Separate, Master, Presets, A/B.
+ * The advanced rack: Live FX, Split, Sampler, Chains, Generate, Separate, Master, Presets, A/B.
  * One implementation, styled by whichever skin hosts it. `only` lets a skin
  * render a subset and place the tab strip itself.
  */
 export function RackTabs({ only }: { only?: readonly Tab[] }) {
   const { tab, setTab, busy } = useRack()
-  const list = only ?? TABS
+  const list = (only ?? TABS).filter((t) => !(t === 'Separate' && isBrowserDemo()))
   return (
     <div className="tabs rack-tabs" role="tablist" aria-label="Pro rack">
       {list.map((t) => (
@@ -28,7 +32,7 @@ export function RackBody({ only }: { only?: readonly Tab[] }) {
   const { current: track, tracks, toast, loadTrack } = useStudio()
   const r = useRack()
   const { chains, sel, setSel, selChain, setSelChain, setStemState, snap, busy } = r
-  const tab = only && !only.includes(r.tab) ? only[0] : r.tab
+  const tab = only && !only.includes(r.tab) ? only[0] : r.tab === 'Separate' && isBrowserDemo() ? 'Split' : r.tab
   const common = { run: r.run, onTrack: (t: typeof track & object) => loadTrack(t), toast }
 
   return (
@@ -79,6 +83,9 @@ export function RackBody({ only }: { only?: readonly Tab[] }) {
           </div>
         </div>
       )}
+      {tab === 'Live FX' && <LiveFxTab />}
+      {tab === 'Split' && <SplitTab />}
+      {tab === 'Sampler' && <SamplerTab />}
       {tab === 'Generate' && <GenerateTab engines={r.engines} {...common} />}
       {tab === 'Separate' && <SeparateTab track={track} engines={r.engines} models={r.models} {...common} />}
       {tab === 'Master' && <MasterTab track={track} targets={r.targets} plugins={r.plugins} {...common} />}
