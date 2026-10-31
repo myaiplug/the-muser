@@ -9,7 +9,8 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const PW = process.env.PW || 'playwright-core'
-const { chromium, devices } = await import(PW.startsWith('/') ? pathToFileURL(PW).href : PW)
+const pwMod = await import(PW.startsWith('/') ? pathToFileURL(PW).href : PW)
+const { chromium, devices } = pwMod.chromium ? pwMod : pwMod.default
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const BASE = process.env.BASE || 'http://127.0.0.1:5198'
 const SHOTS = process.env.SHOTS || ''
@@ -72,7 +73,7 @@ async function run(skin, devName) {
   const tab = async (name) => { const b = page.getByRole('tab', { name, exact: true }).first(); await b.scrollIntoViewIfNeeded().catch(() => {}); await press(b); await page.waitForTimeout(500) }
 
   await page.goto(`${BASE}/?demo=1`, { waitUntil: 'networkidle' })
-  await T('prompt').waitFor()
+  await T('prompt').waitFor({ timeout: 90000 })
 
   await step('skin applied, cross-origin isolated', async () => {
     const d = await page.evaluate(() => ({ skin: document.documentElement.dataset.skin, iso: crossOriginIsolated }))
