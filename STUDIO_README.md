@@ -6,7 +6,7 @@ This fork puts the best open-source audio AI tools under one roof, picks the rig
 automatically, and hides every knob until you ask for it. **Nothing in `src/` was rewritten**:
 the original CLI and Gradio UI still work.
 
-![Easy mode](screenshots/2-01-easy-home.png)
+![Cathode skin, Easy mode](screenshots/skins/cathode-easy.png)
 
 ---
 
@@ -29,6 +29,25 @@ Clean up noise, Match my reference, Turn into MIDI**.
 You can't break anything: every step can be undone, the Studio autosaves, it refuses to export silent
 or clipping files, and errors tell you what to do in plain words.
 
+## Skins
+
+The Studio ships three complete skins. Each is its own layout and visual system on top of the same session, engines and autosave, so you can switch at any moment without losing a track, a chain or a typed prompt.
+
+| Skin | Look | Easy mode | Advanced mode |
+|---|---|---|---|
+| **Cathode** (default) | Black glass, one lime phosphor, a live scope | Vibe cartridges, scope stage, five faders, finish and tools column | Stem strips with chains, preset shelf, deck, library, composer |
+| **Terrain** | Your sound as a WebGL landscape you can read | Spectral terrain, vibe rulers, five rulers for the macros | Lane rows with per-stem controls, sheets for deck, library, composer |
+| **Score** | Paper, ink and one red mark, with engraved notation | Stems transcribed live from the audio into staves, dynamics markings as sliders | Staves per stem, dial rack for the selected stem, docks for deck, library, composer |
+
+![Terrain skin](screenshots/skins/terrain-easy.png)
+![Score skin](screenshots/skins/score-easy.png)
+
+Switch skins from the **skin button in the top bar** (it shows a thumbnail of each), with **Alt+S** to cycle, or by typing "skin" in the **command palette** (Ctrl/Cmd+K). The choice is remembered in your browser. Every skin has Easy and Advanced mode, the 105-preset browser, the Engines drawer with 8 GB fit badges, undo, redo and history, and pads, sequencer and keys in the deck. Press `?` for the keyboard map.
+
+Notes: Terrain uses WebGL2 and falls back to a flat 2D spectrum if it is missing. All skins respect your system "reduce motion" setting. Each skin's heavy visuals and fonts load only when you select it.
+
+---
+
 ## Easy mode and Advanced mode
 
 | | Easy mode (default) | Advanced mode |
@@ -40,7 +59,7 @@ or clipping files, and errors tell you what to do in plain words.
 | Compare | Undo history | A/B compare any two versions |
 | Presets | Built into the vibes | **105 presets**: 24 genre, 30 mix, 21 master, 15 vocal, 15 FX |
 
-Switch with the **Easy / Advanced** toggle in the top bar. The Studio remembers your choice.
+Switch with the **Easy / Advanced** toggle in the top bar (or Alt+E). The Studio remembers your choice.
 
 ---
 
@@ -224,8 +243,11 @@ start_studio.ps1/.bat/.sh  launchers
 ```powershell
 .\.venv\Scripts\python -m studio.server --reload     # API on :8765
 cd studio\web; npm run dev                            # hot-reload UI on :5173
+node studio\tools\ui_skins.mjs                        # click-through test of all skins (studio running with --demo)
 .\.venv\Scripts\python -m pytest tests\test_studio_engines.py tests\test_studio_v2_api.py
 ```
+
+NoDAW Labs Studio front end, built on The Muser (MIT). Skins live in `studio/web/src/skins/` (one folder each, sharing `skins/shared/`).
 
 ## Credits and license
 

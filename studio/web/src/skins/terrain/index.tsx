@@ -268,7 +268,7 @@ function TransportBar({ adv }: { adv?: boolean }) {
   return (
     <div className="ca-transport">
       {!adv && (
-        <div className="ca-hist" data-testid="versions">
+        <div className="ca-hist" data-testid="versions" data-count={versions.length}>
           <button onClick={() => setIdx((i) => Math.max(0, i - 1))} disabled={idx <= 0}>UNDO</button>
           <button onClick={() => setIdx((i) => Math.min(versions.length - 1, i + 1))} disabled={idx >= versions.length - 1}>REDO</button>
           <div className="ca-vers">{versions.map((v, i) => <button key={i} className={i === idx ? 'on' : ''} onClick={() => setIdx(i)}><i>{pad(i + 1)}</i>{v.label.toUpperCase()}</button>)}</div>

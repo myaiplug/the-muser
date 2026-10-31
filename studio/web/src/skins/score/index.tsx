@@ -302,7 +302,7 @@ function Transport({ adv, onDock, dock }: { adv?: boolean; onDock?: (d: Dock) =>
   return (
     <div className="cb-transport">
       {!adv && (
-        <div className="cb-revs" data-testid="versions">
+        <div className="cb-revs" data-testid="versions" data-count={versions.length}>
           <button onClick={() => setIdx((i) => Math.max(0, i - 1))} disabled={idx <= 0}>Undo</button>
           <button onClick={() => setIdx((i) => Math.min(versions.length - 1, i + 1))} disabled={idx >= versions.length - 1}>Redo</button>
           <ol>{versions.map((v, i) => <li key={i}><button className={i === idx ? 'on' : ''} onClick={() => setIdx(i)}><i>Rev. {i + 1}</i>{v.label}</button></li>)}</ol>

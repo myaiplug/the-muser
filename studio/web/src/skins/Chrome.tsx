@@ -217,6 +217,7 @@ function HelpSheet() {
             </div>
           ))}
         </dl>
+        <p className="help-foot">NoDAW Labs Studio front end, built on The Muser (MIT)</p>
       </div>
     </div>
   )

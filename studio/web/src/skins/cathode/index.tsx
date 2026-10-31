@@ -280,7 +280,7 @@ function Transport({ adv }: { adv?: boolean }) {
       <Overview className="cc-ov" />
       {adv && <div className="cc-tx"><HistoryControls /><MasterKnob size={34} /></div>}
       {!adv && (
-        <div className="cc-revs" data-testid="versions">
+        <div className="cc-revs" data-testid="versions" data-count={versions.length}>
           <button onClick={() => setIdx((i) => Math.max(0, i - 1))} disabled={idx <= 0}>UNDO</button>
           <button onClick={() => setIdx((i) => Math.min(versions.length - 1, i + 1))} disabled={idx >= versions.length - 1}>REDO</button>
           <ol>{versions.map((x, i) => <li key={i}><button className={i === idx ? 'on' : ''} onClick={() => setIdx(i)}><i>R{i + 1}</i>{x.label.toUpperCase()}</button></li>)}</ol>
