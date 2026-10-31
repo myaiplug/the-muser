@@ -6,6 +6,11 @@ import { applySkinAttr } from './skins/SkinProvider'
 import { initialSkin } from './skins/registry'
 import App from './App'
 import { initApi } from './api'
+import { audio, installAudioUnlock } from './audio/engine'
+
+installAudioUnlock()
+// Test and debugging hook: the automated audibility check reads the output node through this.
+;(window as unknown as { __muser: unknown }).__muser = { audio }
 
 applySkinAttr(initialSkin())
 

@@ -1,12 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, waitJob } from '../api'
-import { audio } from '../audio/engine'
+import { audio, MASTER_ID } from '../audio/engine'
 import { useHistory, type History } from '../state/history'
-import { DEFAULT_STEM, type Mode, type Project, type Status, type StemParams, type Track } from '../types'
+import { DEFAULT_STEM, SERVER_STEM_KEYS, type Mode, type Project, type Status, type StemParams, type Track } from '../types'
 import { viz } from './viz'
 
 export type Toast = { id: number; text: string; kind: 'info' | 'error' | 'ok' }
 export type Channel = { id: string; name: string; color: string; url: string; role: string }
+/** Pseudo channel so the master FX use the same knobs, undo and bindings as a stem. */
+export const MASTER_CH: Channel = { id: MASTER_ID, name: 'Master', color: '#ffffff', url: '', role: 'master' }
 export type ToastFn = (text: string, kind?: Toast['kind']) => void
 
 export const INITIAL: Project = {
@@ -157,6 +159,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     history.reset((s) => {
       const mixer = { ...s.mixer }
       channels.forEach((c) => (mixer[c.id] ??= { ...DEFAULT_STEM }))
+      mixer[MASTER_ID] ??= { ...DEFAULT_STEM }
       return mixer === s.mixer ? s : { ...s, mixer, bpm: current?.bpm ?? s.bpm }
     })
     if (current?.bpm) viz.bpm = current.bpm
@@ -177,7 +180,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     const anySolo = channels.some((c) => mixer[c.id]?.solo)
     channels.forEach((c) => audio.applyParams(c.id, mixer[c.id] ?? DEFAULT_STEM, anySolo))
   }, [mixer, channels, buffersVersion])
-  useEffect(() => audio.setMasterGain(master.gain_db), [master.gain_db, buffersVersion])
+  const masterFx = mixer[MASTER_ID] ?? DEFAULT_STEM
+  useEffect(() => audio.applyMaster(masterFx, master.gain_db, master.limiter !== false), [masterFx, master.gain_db, master.limiter, buffersVersion])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -273,7 +277,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     if (!current) return
     setBusy('Rendering mix on the server...')
     try {
-      const stems = channels.map((c) => ({ stem_id: c.id, ...(mixer[c.id] ?? DEFAULT_STEM) }))
+      const stems = channels.map((c) => {
+        const p = (mixer[c.id] ?? DEFAULT_STEM) as unknown as Record<string, unknown>
+        return { stem_id: c.id, ...Object.fromEntries(SERVER_STEM_KEYS.map((k) => [k, p[k]])) }
+      })
       const { job_id } = await api.mix({ track_id: current.id, stems, master_gain_db: master.gain_db, normalize: master.normalize })
       const res = await waitJob<{ track: Track }>(job_id, setBusy)
       setTracks((xs) => [res.track, ...xs])

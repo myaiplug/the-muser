@@ -58,7 +58,34 @@ export type StemParams = {
   comp: number
   reverb: number
   room: number
+  // ---- live Web Audio chain (browser only, also used by the offline bounce)
+  /** Parametric band: centre Hz, gain dB, Q. */
+  peq_freq: number
+  peq_gain: number
+  peq_q: number
+  /** Saturation amount 0..1 (WaveShaper, parallel). */
+  sat: number
+  delay_mix: number
+  delay_time: number
+  delay_fb: number
+  /** Stereo width 0 (mono) .. 1 (as is) .. 2 (wide). */
+  width: number
+  /** Filter sweep -1 (low-pass closing) .. 0 (open) .. +1 (high-pass rising). */
+  filter: number
+  filter_q: number
+  /** Bypass the whole FX chain (level, pan, mute and solo stay live). */
+  bypass: boolean
+  byp_eq: boolean
+  byp_comp: boolean
+  byp_sat: boolean
+  byp_delay: boolean
+  byp_verb: boolean
+  byp_filter: boolean
+  byp_width: boolean
 }
+
+/** The fields the server mix endpoint understands. */
+export const SERVER_STEM_KEYS = ['gain_db', 'pan', 'mute', 'solo', 'eq_low_db', 'eq_mid_db', 'eq_high_db', 'comp', 'reverb', 'room'] as const
 
 export const DEFAULT_STEM: StemParams = {
   gain_db: 0,
@@ -71,6 +98,24 @@ export const DEFAULT_STEM: StemParams = {
   comp: 0,
   reverb: 0,
   room: 0.5,
+  peq_freq: 2500,
+  peq_gain: 0,
+  peq_q: 1.2,
+  sat: 0,
+  delay_mix: 0,
+  delay_time: 0.375,
+  delay_fb: 0.35,
+  width: 1,
+  filter: 0,
+  filter_q: 0.8,
+  bypass: false,
+  byp_eq: false,
+  byp_comp: false,
+  byp_sat: false,
+  byp_delay: false,
+  byp_verb: false,
+  byp_filter: false,
+  byp_width: false,
 }
 
 export type SynthParams = {
@@ -88,7 +133,7 @@ export type PadParams = { volume: number; pitch: number; tone: number }
 
 export type Project = {
   mixer: Record<string, StemParams> // key: stem id (or "<trackId>:mix")
-  master: { gain_db: number; normalize: boolean }
+  master: { gain_db: number; normalize: boolean; limiter?: boolean }
   synth: SynthParams
   pads: PadParams
   pattern: boolean[][] // 16 pads x 16 steps

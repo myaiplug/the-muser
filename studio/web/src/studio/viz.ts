@@ -38,21 +38,21 @@ export const viz = {
 
 const taps = new Map<HTMLAudioElement, { an: AnalyserNode; ctx: AudioContext }>()
 
-/** Route an <audio> element through an analyser so previews drive the visuals. */
+/**
+ * Route an <audio> element through an analyser so previews drive the visuals.
+ * It shares the engine's single AudioContext (phones allow only a few contexts,
+ * and a second one can end up suspended or silent).
+ */
 export function tapAudioElement(el: HTMLAudioElement) {
-  if (taps.has(el)) {
-    void taps.get(el)!.ctx.resume()
-    return
-  }
+  if (taps.has(el)) return
   try {
-    const ctx = new AudioContext()
+    const ctx = audio.ensure()
     const src = ctx.createMediaElementSource(el)
     const an = ctx.createAnalyser()
     an.fftSize = 1024
     src.connect(an)
     an.connect(ctx.destination)
     taps.set(el, { an, ctx })
-    void ctx.resume()
   } catch {
     /* already tapped or blocked: playback still works untapped */
   }

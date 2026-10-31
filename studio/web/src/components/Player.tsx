@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { audio } from '../audio/engine'
 import { tapAudioElement } from '../studio/viz'
 
 /** Lightweight file player with a drawn waveform. Used by Easy mode and A/B compare. */
 const peakCache = new Map<string, Float32Array>()
-let ctx: AudioContext | null = null
 
 async function loadPeaks(url: string, n = 600): Promise<Float32Array> {
   const hit = peakCache.get(url)
   if (hit) return hit
-  ctx ??= new AudioContext()
-  const buf = await ctx.decodeAudioData(await (await fetch(url)).arrayBuffer())
+  const buf = await audio.decodeBytes(await (await fetch(url)).arrayBuffer())
   const ch = buf.getChannelData(0)
   const per = Math.max(1, Math.floor(ch.length / n))
   const out = new Float32Array(n)
