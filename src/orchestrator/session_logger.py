@@ -11,7 +11,9 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-LOG_DIR = Path(__file__).resolve().parents[2] / "training_data" / "sessions"
+from src.orchestrator.config import TRAINING_DATA_DIR
+
+LOG_DIR = TRAINING_DATA_DIR / "sessions"
 
 
 class SessionLogger:

@@ -10,12 +10,12 @@ import time
 from datetime import datetime
 from typing import Any
 
-from src.orchestrator.config import PROJECT_ROOT
+from src.orchestrator.config import USER_ROOT
 
 logger = logging.getLogger(__name__)
 
 # Session log directory
-LOG_DIR = PROJECT_ROOT / "logs"
+LOG_DIR = USER_ROOT / "logs"
 
 
 class SessionLogger:

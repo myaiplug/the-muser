@@ -68,6 +68,22 @@ See [docs/legal.md](docs/legal.md) for the full breakdown including optional com
 
 ## Installation
 
+### Desktop app (Windows and macOS, no Python needed)
+
+Download the installer from the [Releases page](https://github.com/myaiplug/the-muser/releases):
+
+- **Windows 10/11 (64-bit):** `TheMuser-Setup-<version>-win64.exe`. SmartScreen will say "Windows
+  protected your PC" because the installer is unsigned: click **More info**, then **Run anyway**.
+- **macOS 11+ (Apple Silicon):** `TheMuser-<version>-macos-arm64.dmg`. Drag The Muser to Applications,
+  then right-click it and choose **Open** the first time. If macOS says it is damaged, run
+  `xattr -dr com.apple.quarantine "/Applications/The Muser.app"`.
+
+It runs The Muser Studio in its own window with the demo synthesizer, the mastering/DSP tools and the
+AI stem splitter (CPU). Splitter models download on first use into your user folder
+(`%LOCALAPPDATA%\TheMuser` or `~/Library/Application Support/The Muser`). [Ollama](https://ollama.com/download)
+is optional and is not bundled: without it, chat runs in demo mode. GPU generation (ACE-Step etc.)
+needs the source install below. Build recipe: `packaging/` and `.github/workflows/desktop-installers.yml`.
+
 ### Prerequisites
 
 - Python 3.10+

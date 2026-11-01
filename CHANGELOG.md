@@ -6,6 +6,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- Windows installer (.exe) and macOS disk image (.dmg, Apple Silicon) built by GitHub Actions
+  (`.github/workflows/desktop-installers.yml`, recipe in `packaging/`). Unsigned. The app keeps your
+  data in a per-user folder (`MUSER_HOME`), bundles ffmpeg and the CPU stem splitter, downloads
+  models on first use, and detects Ollama without bundling it.
 - Stem fidelity pass after every AI split: stems come back at your file's sample rate (one high
   quality resample), as 24-bit WAV, with a measured "adds back up to the song" check. When a model
   loses energy, the catch-all stem (instrumental / other) is rebuilt as the song minus the rest.
