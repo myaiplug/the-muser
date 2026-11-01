@@ -1,0 +1,22 @@
+{
+  "name": "nodaw-sound-library",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Royalty-free drum sound database for NoDAW Studio PRO: taxonomy, license validator, ingesters, API.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "taxonomy": "node taxonomy/build.mjs",
+    "build": "node scripts/build-index.mjs",
+    "validate": "node scripts/validate.mjs",
+    "serve": "node src/server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.1.4"
+  }
+}

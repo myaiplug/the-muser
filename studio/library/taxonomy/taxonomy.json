@@ -1,0 +1,1559 @@
+{
+  "version": 1,
+  "types": [
+    "kick",
+    "snare",
+    "clap",
+    "hat",
+    "open-hat",
+    "perc",
+    "808",
+    "cymbal",
+    "tom"
+  ],
+  "genres": [
+    {
+      "id": "lo-fi-chill",
+      "name": "Lo-fi Chill",
+      "aliases": [
+        "lofi",
+        "lo-fi",
+        "chillhop"
+      ],
+      "categories": [
+        "lofi-dusty-kick",
+        "acoustic-kick",
+        "lofi-snare",
+        "acoustic-snare",
+        "acoustic-sidestick",
+        "lofi-clap",
+        "lofi-hat",
+        "lofi-open-hat",
+        "rim-perc",
+        "shaker-perc",
+        "snap-perc"
+      ]
+    },
+    {
+      "id": "hip-hop",
+      "name": "Hip Hop",
+      "aliases": [
+        "hiphop",
+        "boom-bap",
+        "boombap"
+      ],
+      "categories": [
+        "boom-bap-kick",
+        "acoustic-kick",
+        "boom-bap-snare",
+        "acoustic-snare",
+        "acoustic-rimshot",
+        "boom-bap-clap",
+        "lofi-hat",
+        "lofi-open-hat",
+        "rim-perc",
+        "808-sub",
+        "808-short"
+      ]
+    },
+    {
+      "id": "trap",
+      "name": "Trap",
+      "aliases": [
+        "atlanta-trap"
+      ],
+      "categories": [
+        "trap-kick",
+        "electronic-kick-general",
+        "trap-snare",
+        "trap-clap",
+        "trap-hat",
+        "trap-open-hat",
+        "snap-perc",
+        "808-sub",
+        "808-distorted",
+        "808-slide"
+      ]
+    },
+    {
+      "id": "uk-drill",
+      "name": "UK Drill",
+      "aliases": [
+        "drill",
+        "ny-drill"
+      ],
+      "categories": [
+        "trap-kick",
+        "trap-snare",
+        "trap-clap",
+        "trap-hat",
+        "trap-open-hat",
+        "808-distorted",
+        "808-slide"
+      ]
+    },
+    {
+      "id": "phonk",
+      "name": "Phonk",
+      "aliases": [
+        "memphis",
+        "drift-phonk"
+      ],
+      "categories": [
+        "trap-kick",
+        "electronic-kick-general",
+        "trap-snare",
+        "trap-clap",
+        "trap-hat",
+        "trap-open-hat",
+        "cowbell-perc",
+        "808-distorted"
+      ]
+    },
+    {
+      "id": "techno",
+      "name": "Techno",
+      "aliases": [
+        "deep-techno",
+        "minimal-techno",
+        "warehouse"
+      ],
+      "categories": [
+        "techno-kick",
+        "electronic-kick-general",
+        "techno-snare",
+        "house-clap",
+        "house-hat",
+        "house-open-hat",
+        "synth-tom"
+      ]
+    },
+    {
+      "id": "house",
+      "name": "House",
+      "aliases": [
+        "modern-house",
+        "deep-house",
+        "tech-house"
+      ],
+      "categories": [
+        "modern-house-kick",
+        "electronic-kick-general",
+        "techno-snare",
+        "house-clap",
+        "house-hat",
+        "house-open-hat",
+        "cowbell-perc",
+        "shaker-perc",
+        "conga-perc"
+      ]
+    },
+    {
+      "id": "edm-anthem",
+      "name": "EDM Anthem",
+      "aliases": [
+        "edm",
+        "big-room",
+        "festival",
+        "trance"
+      ],
+      "categories": [
+        "edm-anthem-kick",
+        "electronic-kick-general",
+        "gated-snare",
+        "pop-clap",
+        "house-hat",
+        "house-open-hat",
+        "crash-cymbal",
+        "acoustic-crash",
+        "synth-tom"
+      ]
+    },
+    {
+      "id": "synthwave",
+      "name": "Synthwave",
+      "aliases": [
+        "retrowave",
+        "outrun"
+      ],
+      "categories": [
+        "soft-kick",
+        "gated-snare",
+        "pop-clap",
+        "pop-hat",
+        "pop-open-hat",
+        "synth-tom"
+      ]
+    },
+    {
+      "id": "chillwave",
+      "name": "Chillwave",
+      "aliases": [
+        "vaporwave",
+        "dream-pop"
+      ],
+      "categories": [
+        "soft-kick",
+        "lofi-snare",
+        "lofi-clap",
+        "lofi-hat",
+        "lofi-open-hat"
+      ]
+    },
+    {
+      "id": "ambient",
+      "name": "Ambient",
+      "aliases": [
+        "soundscape"
+      ],
+      "categories": [
+        "soft-kick",
+        "cinematic-kick",
+        "soft-snare",
+        "pop-hat",
+        "pop-open-hat",
+        "world-hand-perc"
+      ]
+    },
+    {
+      "id": "cinematic",
+      "name": "Cinematic",
+      "aliases": [
+        "film",
+        "trailer",
+        "orchestral"
+      ],
+      "categories": [
+        "cinematic-kick",
+        "cinematic-snare",
+        "woodblock-perc",
+        "world-hand-perc",
+        "acoustic-woodblock-perc",
+        "crash-cymbal",
+        "acoustic-crash",
+        "acoustic-china",
+        "acoustic-tom"
+      ]
+    },
+    {
+      "id": "jazz-lounge",
+      "name": "Jazz Lounge",
+      "aliases": [
+        "jazz",
+        "lounge",
+        "bossa"
+      ],
+      "categories": [
+        "jazz-kick",
+        "acoustic-kick",
+        "jazz-snare",
+        "acoustic-snare",
+        "acoustic-sidestick",
+        "acoustic-hat",
+        "acoustic-open-hat",
+        "conga-perc",
+        "clave-perc",
+        "ride-cymbal",
+        "acoustic-ride",
+        "acoustic-tom"
+      ]
+    },
+    {
+      "id": "r-b-slow-jam",
+      "name": "R&B Slow Jam",
+      "aliases": [
+        "rnb",
+        "r-and-b",
+        "neo-soul"
+      ],
+      "categories": [
+        "soft-kick",
+        "acoustic-kick",
+        "soft-snare",
+        "acoustic-snare",
+        "acoustic-sidestick",
+        "lofi-clap",
+        "lofi-hat",
+        "lofi-open-hat",
+        "rim-perc",
+        "snap-perc",
+        "808-sub"
+      ]
+    },
+    {
+      "id": "pop",
+      "name": "Pop",
+      "aliases": [
+        "dance-pop",
+        "electropop"
+      ],
+      "categories": [
+        "pop-kick",
+        "gated-snare",
+        "pop-snare",
+        "pop-clap",
+        "pop-hat",
+        "pop-open-hat",
+        "shaker-perc",
+        "tambourine-perc",
+        "snap-perc",
+        "acoustic-tambourine-perc",
+        "808-sub",
+        "crash-cymbal",
+        "acoustic-crash",
+        "synth-tom"
+      ]
+    },
+    {
+      "id": "rock",
+      "name": "Rock",
+      "aliases": [
+        "alt-rock",
+        "punk",
+        "garage-rock"
+      ],
+      "categories": [
+        "rock-kick",
+        "acoustic-kick",
+        "rock-snare",
+        "acoustic-snare",
+        "acoustic-rimshot",
+        "acoustic-hat",
+        "acoustic-open-hat",
+        "cowbell-perc",
+        "tambourine-perc",
+        "acoustic-tambourine-perc",
+        "acoustic-cowbell-perc",
+        "crash-cymbal",
+        "ride-cymbal",
+        "acoustic-crash",
+        "acoustic-ride",
+        "acoustic-china",
+        "acoustic-tom"
+      ]
+    },
+    {
+      "id": "metal",
+      "name": "Metal",
+      "aliases": [
+        "djent",
+        "thrash"
+      ],
+      "categories": [
+        "metal-kick",
+        "acoustic-kick",
+        "metal-snare",
+        "acoustic-snare",
+        "acoustic-rimshot",
+        "acoustic-hat",
+        "acoustic-open-hat",
+        "crash-cymbal",
+        "acoustic-crash",
+        "acoustic-china",
+        "acoustic-tom"
+      ]
+    },
+    {
+      "id": "afrobeats",
+      "name": "Afrobeats",
+      "aliases": [
+        "afrobeat",
+        "amapiano",
+        "afropop"
+      ],
+      "categories": [
+        "pop-kick",
+        "pop-snare",
+        "pop-clap",
+        "hand-clap",
+        "pop-hat",
+        "pop-open-hat",
+        "rim-perc",
+        "cowbell-perc",
+        "shaker-perc",
+        "conga-perc",
+        "clave-perc",
+        "woodblock-perc",
+        "world-hand-perc",
+        "acoustic-woodblock-perc",
+        "acoustic-cowbell-perc",
+        "808-sub"
+      ]
+    },
+    {
+      "id": "reggaeton",
+      "name": "Reggaeton",
+      "aliases": [
+        "dembow",
+        "latin",
+        "moombahton"
+      ],
+      "categories": [
+        "pop-kick",
+        "pop-snare",
+        "pop-clap",
+        "pop-hat",
+        "pop-open-hat",
+        "rim-perc",
+        "cowbell-perc",
+        "shaker-perc",
+        "conga-perc",
+        "clave-perc",
+        "woodblock-perc",
+        "world-hand-perc",
+        "acoustic-woodblock-perc",
+        "acoustic-cowbell-perc",
+        "808-sub"
+      ]
+    },
+    {
+      "id": "drum-and-bass",
+      "name": "Drum and Bass",
+      "aliases": [
+        "dnb",
+        "jungle",
+        "liquid"
+      ],
+      "categories": [
+        "dnb-kick",
+        "electronic-kick-general",
+        "dnb-snare",
+        "bass-music-clap",
+        "house-hat",
+        "house-open-hat",
+        "808-short"
+      ]
+    },
+    {
+      "id": "dubstep",
+      "name": "Dubstep",
+      "aliases": [
+        "brostep",
+        "riddim",
+        "bass-music"
+      ],
+      "categories": [
+        "dubstep-kick",
+        "electronic-kick-general",
+        "dubstep-snare",
+        "bass-music-clap",
+        "house-hat",
+        "house-open-hat",
+        "808-short"
+      ]
+    },
+    {
+      "id": "country-pop",
+      "name": "Country Pop",
+      "aliases": [
+        "country",
+        "nashville"
+      ],
+      "categories": [
+        "rock-kick",
+        "acoustic-kick",
+        "rock-snare",
+        "acoustic-snare",
+        "acoustic-rimshot",
+        "acoustic-sidestick",
+        "hand-clap",
+        "acoustic-hat",
+        "acoustic-open-hat",
+        "tambourine-perc",
+        "acoustic-tambourine-perc",
+        "acoustic-cowbell-perc",
+        "crash-cymbal",
+        "acoustic-crash",
+        "acoustic-tom"
+      ]
+    },
+    {
+      "id": "indie-folk",
+      "name": "Indie Folk",
+      "aliases": [
+        "folk",
+        "indie",
+        "acoustic"
+      ],
+      "categories": [
+        "soft-kick",
+        "acoustic-kick",
+        "soft-snare",
+        "acoustic-snare",
+        "acoustic-sidestick",
+        "hand-clap",
+        "acoustic-hat",
+        "acoustic-open-hat",
+        "shaker-perc",
+        "tambourine-perc",
+        "woodblock-perc",
+        "world-hand-perc",
+        "acoustic-tambourine-perc",
+        "acoustic-woodblock-perc",
+        "ride-cymbal",
+        "acoustic-ride"
+      ]
+    },
+    {
+      "id": "gospel-soul",
+      "name": "Gospel Soul",
+      "aliases": [
+        "gospel",
+        "soul"
+      ],
+      "categories": [
+        "jazz-kick",
+        "acoustic-kick",
+        "soft-snare",
+        "acoustic-snare",
+        "acoustic-rimshot",
+        "acoustic-sidestick",
+        "hand-clap",
+        "acoustic-hat",
+        "acoustic-open-hat",
+        "tambourine-perc",
+        "world-hand-perc",
+        "acoustic-tambourine-perc",
+        "ride-cymbal",
+        "acoustic-ride",
+        "acoustic-tom"
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": "modern-house-kick",
+      "type": "kick",
+      "label": "Modern House Kick",
+      "genres": [
+        "house"
+      ],
+      "tags": [
+        "four-on-the-floor",
+        "punchy"
+      ]
+    },
+    {
+      "id": "techno-kick",
+      "type": "kick",
+      "label": "Deep Techno Kick",
+      "genres": [
+        "techno"
+      ],
+      "tags": [
+        "driving",
+        "distorted"
+      ]
+    },
+    {
+      "id": "boom-bap-kick",
+      "type": "kick",
+      "label": "Boom Bap Kick",
+      "genres": [
+        "hip-hop"
+      ],
+      "tags": [
+        "boom-bap",
+        "round"
+      ]
+    },
+    {
+      "id": "lofi-dusty-kick",
+      "type": "kick",
+      "label": "Lo-fi Dusty Kick",
+      "genres": [
+        "lo-fi-chill"
+      ],
+      "tags": [
+        "dusty",
+        "soft"
+      ]
+    },
+    {
+      "id": "trap-kick",
+      "type": "kick",
+      "label": "Trap Kick",
+      "genres": [
+        "trap",
+        "uk-drill",
+        "phonk"
+      ],
+      "tags": [
+        "hard",
+        "long-tail"
+      ]
+    },
+    {
+      "id": "dnb-kick",
+      "type": "kick",
+      "label": "Drum and Bass Kick",
+      "genres": [
+        "drum-and-bass"
+      ],
+      "tags": [
+        "tight",
+        "fast"
+      ]
+    },
+    {
+      "id": "dubstep-kick",
+      "type": "kick",
+      "label": "Dubstep Kick",
+      "genres": [
+        "dubstep"
+      ],
+      "tags": [
+        "heavy",
+        "saturated"
+      ]
+    },
+    {
+      "id": "edm-anthem-kick",
+      "type": "kick",
+      "label": "EDM Anthem Kick",
+      "genres": [
+        "edm-anthem"
+      ],
+      "tags": [
+        "big-room",
+        "club"
+      ]
+    },
+    {
+      "id": "pop-kick",
+      "type": "kick",
+      "label": "Modern Pop Kick",
+      "genres": [
+        "pop",
+        "afrobeats",
+        "reggaeton"
+      ],
+      "tags": [
+        "clean",
+        "mid-punch"
+      ]
+    },
+    {
+      "id": "soft-kick",
+      "type": "kick",
+      "label": "Soft Kick",
+      "genres": [
+        "chillwave",
+        "ambient",
+        "r-b-slow-jam",
+        "indie-folk",
+        "synthwave"
+      ],
+      "tags": [
+        "soft",
+        "warm"
+      ]
+    },
+    {
+      "id": "rock-kick",
+      "type": "kick",
+      "label": "Rock Kick",
+      "genres": [
+        "rock",
+        "country-pop"
+      ],
+      "tags": [
+        "beater",
+        "tight"
+      ]
+    },
+    {
+      "id": "metal-kick",
+      "type": "kick",
+      "label": "Metal Kick",
+      "genres": [
+        "metal"
+      ],
+      "tags": [
+        "clicky",
+        "double-pedal"
+      ]
+    },
+    {
+      "id": "jazz-kick",
+      "type": "kick",
+      "label": "Jazz Kick",
+      "genres": [
+        "jazz-lounge",
+        "gospel-soul"
+      ],
+      "tags": [
+        "feathered",
+        "low-tuned"
+      ]
+    },
+    {
+      "id": "cinematic-kick",
+      "type": "kick",
+      "label": "Cinematic Impact Kick",
+      "genres": [
+        "cinematic",
+        "ambient"
+      ],
+      "tags": [
+        "impact",
+        "deep"
+      ]
+    },
+    {
+      "id": "acoustic-kick",
+      "type": "kick",
+      "label": "Acoustic Kick",
+      "genres": [
+        "rock",
+        "country-pop",
+        "indie-folk",
+        "metal",
+        "jazz-lounge",
+        "gospel-soul",
+        "r-b-slow-jam",
+        "hip-hop",
+        "lo-fi-chill"
+      ],
+      "tags": [
+        "acoustic",
+        "recorded"
+      ]
+    },
+    {
+      "id": "electronic-kick-general",
+      "type": "kick",
+      "label": "Electronic Kick (general)",
+      "genres": [
+        "house",
+        "techno",
+        "edm-anthem",
+        "trap",
+        "phonk",
+        "dubstep",
+        "drum-and-bass"
+      ],
+      "tags": [
+        "electronic",
+        "producer-kick"
+      ]
+    },
+    {
+      "id": "boom-bap-snare",
+      "type": "snare",
+      "label": "Boom Bap Snare",
+      "genres": [
+        "hip-hop"
+      ],
+      "tags": [
+        "boom-bap",
+        "crack"
+      ]
+    },
+    {
+      "id": "lofi-snare",
+      "type": "snare",
+      "label": "Lo-fi Snare",
+      "genres": [
+        "lo-fi-chill",
+        "chillwave"
+      ],
+      "tags": [
+        "dusty",
+        "filtered"
+      ]
+    },
+    {
+      "id": "trap-snare",
+      "type": "snare",
+      "label": "Trap Snare",
+      "genres": [
+        "trap",
+        "uk-drill",
+        "phonk"
+      ],
+      "tags": [
+        "bright",
+        "snappy"
+      ]
+    },
+    {
+      "id": "rock-snare",
+      "type": "snare",
+      "label": "Rock Snare",
+      "genres": [
+        "rock",
+        "country-pop"
+      ],
+      "tags": [
+        "crack",
+        "ring"
+      ]
+    },
+    {
+      "id": "metal-snare",
+      "type": "snare",
+      "label": "Metal Snare",
+      "genres": [
+        "metal"
+      ],
+      "tags": [
+        "tight",
+        "bright"
+      ]
+    },
+    {
+      "id": "dnb-snare",
+      "type": "snare",
+      "label": "Drum and Bass Snare",
+      "genres": [
+        "drum-and-bass"
+      ],
+      "tags": [
+        "snappy",
+        "high-tuned"
+      ]
+    },
+    {
+      "id": "dubstep-snare",
+      "type": "snare",
+      "label": "Dubstep Snare",
+      "genres": [
+        "dubstep"
+      ],
+      "tags": [
+        "heavy",
+        "half-time"
+      ]
+    },
+    {
+      "id": "gated-snare",
+      "type": "snare",
+      "label": "Gated Snare",
+      "genres": [
+        "synthwave",
+        "pop",
+        "edm-anthem"
+      ],
+      "tags": [
+        "gated",
+        "80s"
+      ]
+    },
+    {
+      "id": "pop-snare",
+      "type": "snare",
+      "label": "Modern Pop Snare",
+      "genres": [
+        "pop",
+        "afrobeats",
+        "reggaeton"
+      ],
+      "tags": [
+        "clean",
+        "mid"
+      ]
+    },
+    {
+      "id": "techno-snare",
+      "type": "snare",
+      "label": "Tight Techno Snare",
+      "genres": [
+        "techno",
+        "house"
+      ],
+      "tags": [
+        "tight",
+        "short"
+      ]
+    },
+    {
+      "id": "soft-snare",
+      "type": "snare",
+      "label": "Soft Snare",
+      "genres": [
+        "r-b-slow-jam",
+        "indie-folk",
+        "ambient",
+        "gospel-soul"
+      ],
+      "tags": [
+        "soft",
+        "round"
+      ]
+    },
+    {
+      "id": "jazz-snare",
+      "type": "snare",
+      "label": "Jazz Snare",
+      "genres": [
+        "jazz-lounge"
+      ],
+      "tags": [
+        "brushed",
+        "dry"
+      ]
+    },
+    {
+      "id": "cinematic-snare",
+      "type": "snare",
+      "label": "Cinematic Snare",
+      "genres": [
+        "cinematic"
+      ],
+      "tags": [
+        "big",
+        "long-tail"
+      ]
+    },
+    {
+      "id": "acoustic-snare",
+      "type": "snare",
+      "label": "Acoustic Snare",
+      "genres": [
+        "rock",
+        "metal",
+        "country-pop",
+        "indie-folk",
+        "jazz-lounge",
+        "gospel-soul",
+        "r-b-slow-jam",
+        "hip-hop",
+        "lo-fi-chill"
+      ],
+      "tags": [
+        "acoustic",
+        "recorded"
+      ]
+    },
+    {
+      "id": "acoustic-rimshot",
+      "type": "snare",
+      "label": "Acoustic Rimshot",
+      "genres": [
+        "rock",
+        "metal",
+        "country-pop",
+        "gospel-soul",
+        "hip-hop"
+      ],
+      "tags": [
+        "acoustic",
+        "rimshot"
+      ]
+    },
+    {
+      "id": "acoustic-sidestick",
+      "type": "snare",
+      "label": "Acoustic Side Stick",
+      "genres": [
+        "jazz-lounge",
+        "r-b-slow-jam",
+        "indie-folk",
+        "gospel-soul",
+        "country-pop",
+        "lo-fi-chill"
+      ],
+      "tags": [
+        "acoustic",
+        "cross-stick"
+      ]
+    },
+    {
+      "id": "house-clap",
+      "type": "clap",
+      "label": "House Clap",
+      "genres": [
+        "house",
+        "techno"
+      ],
+      "tags": [
+        "layered",
+        "tight"
+      ]
+    },
+    {
+      "id": "trap-clap",
+      "type": "clap",
+      "label": "Trap Clap",
+      "genres": [
+        "trap",
+        "uk-drill",
+        "phonk"
+      ],
+      "tags": [
+        "snappy",
+        "wide"
+      ]
+    },
+    {
+      "id": "pop-clap",
+      "type": "clap",
+      "label": "Pop Clap",
+      "genres": [
+        "pop",
+        "edm-anthem",
+        "synthwave",
+        "reggaeton",
+        "afrobeats"
+      ],
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "id": "lofi-clap",
+      "type": "clap",
+      "label": "Lo-fi Clap",
+      "genres": [
+        "lo-fi-chill",
+        "chillwave",
+        "r-b-slow-jam"
+      ],
+      "tags": [
+        "dusty",
+        "soft"
+      ]
+    },
+    {
+      "id": "boom-bap-clap",
+      "type": "clap",
+      "label": "Boom Bap Clap",
+      "genres": [
+        "hip-hop"
+      ],
+      "tags": [
+        "sampled-style"
+      ]
+    },
+    {
+      "id": "bass-music-clap",
+      "type": "clap",
+      "label": "Bass Music Clap",
+      "genres": [
+        "dubstep",
+        "drum-and-bass"
+      ],
+      "tags": [
+        "bright"
+      ]
+    },
+    {
+      "id": "hand-clap",
+      "type": "clap",
+      "label": "Hand Clap",
+      "genres": [
+        "gospel-soul",
+        "indie-folk",
+        "country-pop",
+        "afrobeats"
+      ],
+      "tags": [
+        "acoustic",
+        "recorded"
+      ]
+    },
+    {
+      "id": "trap-hat",
+      "type": "hat",
+      "label": "Trap Hat",
+      "genres": [
+        "trap",
+        "uk-drill",
+        "phonk"
+      ],
+      "tags": [
+        "tick",
+        "bright"
+      ]
+    },
+    {
+      "id": "house-hat",
+      "type": "hat",
+      "label": "House Hat",
+      "genres": [
+        "house",
+        "techno",
+        "edm-anthem",
+        "drum-and-bass",
+        "dubstep"
+      ],
+      "tags": [
+        "crisp"
+      ]
+    },
+    {
+      "id": "lofi-hat",
+      "type": "hat",
+      "label": "Lo-fi Hat",
+      "genres": [
+        "lo-fi-chill",
+        "chillwave",
+        "hip-hop",
+        "r-b-slow-jam"
+      ],
+      "tags": [
+        "dull",
+        "dusty"
+      ]
+    },
+    {
+      "id": "pop-hat",
+      "type": "hat",
+      "label": "Pop Hat",
+      "genres": [
+        "pop",
+        "afrobeats",
+        "reggaeton",
+        "synthwave",
+        "ambient"
+      ],
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "id": "acoustic-hat",
+      "type": "hat",
+      "label": "Acoustic Hi-hat",
+      "genres": [
+        "rock",
+        "metal",
+        "jazz-lounge",
+        "country-pop",
+        "indie-folk",
+        "gospel-soul"
+      ],
+      "tags": [
+        "acoustic",
+        "recorded"
+      ]
+    },
+    {
+      "id": "trap-open-hat",
+      "type": "open-hat",
+      "label": "Trap Open Hat",
+      "genres": [
+        "trap",
+        "uk-drill",
+        "phonk"
+      ],
+      "tags": [
+        "bright"
+      ]
+    },
+    {
+      "id": "house-open-hat",
+      "type": "open-hat",
+      "label": "House Open Hat",
+      "genres": [
+        "house",
+        "techno",
+        "edm-anthem",
+        "drum-and-bass",
+        "dubstep"
+      ],
+      "tags": [
+        "offbeat"
+      ]
+    },
+    {
+      "id": "lofi-open-hat",
+      "type": "open-hat",
+      "label": "Lo-fi Open Hat",
+      "genres": [
+        "lo-fi-chill",
+        "chillwave",
+        "hip-hop",
+        "r-b-slow-jam"
+      ],
+      "tags": [
+        "dull"
+      ]
+    },
+    {
+      "id": "pop-open-hat",
+      "type": "open-hat",
+      "label": "Pop Open Hat",
+      "genres": [
+        "pop",
+        "afrobeats",
+        "reggaeton",
+        "synthwave",
+        "ambient"
+      ],
+      "tags": [
+        "clean"
+      ]
+    },
+    {
+      "id": "acoustic-open-hat",
+      "type": "open-hat",
+      "label": "Acoustic Open Hi-hat",
+      "genres": [
+        "rock",
+        "metal",
+        "jazz-lounge",
+        "country-pop",
+        "indie-folk",
+        "gospel-soul"
+      ],
+      "tags": [
+        "acoustic",
+        "recorded"
+      ]
+    },
+    {
+      "id": "rim-perc",
+      "type": "perc",
+      "label": "Rim Click",
+      "genres": [
+        "hip-hop",
+        "reggaeton",
+        "afrobeats",
+        "r-b-slow-jam",
+        "lo-fi-chill"
+      ],
+      "tags": [
+        "rim",
+        "click"
+      ]
+    },
+    {
+      "id": "cowbell-perc",
+      "type": "perc",
+      "label": "Cowbell",
+      "genres": [
+        "reggaeton",
+        "afrobeats",
+        "phonk",
+        "house",
+        "rock"
+      ],
+      "tags": [
+        "cowbell",
+        "metallic"
+      ]
+    },
+    {
+      "id": "shaker-perc",
+      "type": "perc",
+      "label": "Shaker",
+      "genres": [
+        "house",
+        "afrobeats",
+        "reggaeton",
+        "pop",
+        "lo-fi-chill",
+        "indie-folk"
+      ],
+      "tags": [
+        "shaker"
+      ]
+    },
+    {
+      "id": "tambourine-perc",
+      "type": "perc",
+      "label": "Tambourine",
+      "genres": [
+        "gospel-soul",
+        "indie-folk",
+        "country-pop",
+        "pop",
+        "rock"
+      ],
+      "tags": [
+        "tambourine"
+      ]
+    },
+    {
+      "id": "conga-perc",
+      "type": "perc",
+      "label": "Conga",
+      "genres": [
+        "afrobeats",
+        "reggaeton",
+        "house",
+        "jazz-lounge"
+      ],
+      "tags": [
+        "conga",
+        "tonal"
+      ]
+    },
+    {
+      "id": "clave-perc",
+      "type": "perc",
+      "label": "Clave",
+      "genres": [
+        "afrobeats",
+        "reggaeton",
+        "jazz-lounge"
+      ],
+      "tags": [
+        "clave",
+        "wood"
+      ]
+    },
+    {
+      "id": "snap-perc",
+      "type": "perc",
+      "label": "Finger Snap",
+      "genres": [
+        "r-b-slow-jam",
+        "pop",
+        "lo-fi-chill",
+        "trap"
+      ],
+      "tags": [
+        "snap"
+      ]
+    },
+    {
+      "id": "woodblock-perc",
+      "type": "perc",
+      "label": "Wood Block",
+      "genres": [
+        "afrobeats",
+        "reggaeton",
+        "indie-folk",
+        "cinematic"
+      ],
+      "tags": [
+        "wood"
+      ]
+    },
+    {
+      "id": "world-hand-perc",
+      "type": "perc",
+      "label": "Hand Drum / World Perc",
+      "genres": [
+        "afrobeats",
+        "reggaeton",
+        "indie-folk",
+        "gospel-soul",
+        "ambient",
+        "cinematic"
+      ],
+      "tags": [
+        "djembe",
+        "bongo",
+        "darbouka",
+        "cajon",
+        "recorded"
+      ]
+    },
+    {
+      "id": "acoustic-tambourine-perc",
+      "type": "perc",
+      "label": "Acoustic Tambourine",
+      "genres": [
+        "gospel-soul",
+        "indie-folk",
+        "country-pop",
+        "rock",
+        "pop"
+      ],
+      "tags": [
+        "tambourine",
+        "recorded"
+      ]
+    },
+    {
+      "id": "acoustic-woodblock-perc",
+      "type": "perc",
+      "label": "Acoustic Wood Block",
+      "genres": [
+        "indie-folk",
+        "cinematic",
+        "afrobeats",
+        "reggaeton"
+      ],
+      "tags": [
+        "wood",
+        "recorded"
+      ]
+    },
+    {
+      "id": "acoustic-cowbell-perc",
+      "type": "perc",
+      "label": "Acoustic Cowbell",
+      "genres": [
+        "rock",
+        "afrobeats",
+        "reggaeton",
+        "country-pop"
+      ],
+      "tags": [
+        "cowbell",
+        "recorded"
+      ]
+    },
+    {
+      "id": "808-sub",
+      "type": "808",
+      "label": "808 Sub Bass",
+      "genres": [
+        "trap",
+        "hip-hop",
+        "r-b-slow-jam",
+        "pop",
+        "reggaeton",
+        "afrobeats"
+      ],
+      "tags": [
+        "sub",
+        "clean"
+      ]
+    },
+    {
+      "id": "808-distorted",
+      "type": "808",
+      "label": "Distorted 808",
+      "genres": [
+        "phonk",
+        "trap",
+        "uk-drill"
+      ],
+      "tags": [
+        "distorted",
+        "hard"
+      ]
+    },
+    {
+      "id": "808-slide",
+      "type": "808",
+      "label": "Long 808 (slide-ready)",
+      "genres": [
+        "uk-drill",
+        "trap"
+      ],
+      "tags": [
+        "long",
+        "glide"
+      ]
+    },
+    {
+      "id": "808-short",
+      "type": "808",
+      "label": "Short 808",
+      "genres": [
+        "hip-hop",
+        "drum-and-bass",
+        "dubstep"
+      ],
+      "tags": [
+        "short",
+        "punchy"
+      ]
+    },
+    {
+      "id": "crash-cymbal",
+      "type": "cymbal",
+      "label": "Crash Cymbal",
+      "genres": [
+        "edm-anthem",
+        "pop",
+        "rock",
+        "metal",
+        "cinematic",
+        "country-pop"
+      ],
+      "tags": [
+        "crash"
+      ]
+    },
+    {
+      "id": "ride-cymbal",
+      "type": "cymbal",
+      "label": "Ride Cymbal",
+      "genres": [
+        "jazz-lounge",
+        "gospel-soul",
+        "rock",
+        "indie-folk"
+      ],
+      "tags": [
+        "ride"
+      ]
+    },
+    {
+      "id": "acoustic-crash",
+      "type": "cymbal",
+      "label": "Acoustic Crash",
+      "genres": [
+        "rock",
+        "metal",
+        "cinematic",
+        "country-pop",
+        "pop",
+        "edm-anthem"
+      ],
+      "tags": [
+        "crash",
+        "recorded"
+      ]
+    },
+    {
+      "id": "acoustic-ride",
+      "type": "cymbal",
+      "label": "Acoustic Ride",
+      "genres": [
+        "jazz-lounge",
+        "gospel-soul",
+        "rock",
+        "indie-folk"
+      ],
+      "tags": [
+        "ride",
+        "recorded"
+      ]
+    },
+    {
+      "id": "acoustic-china",
+      "type": "cymbal",
+      "label": "China / Splash",
+      "genres": [
+        "metal",
+        "rock",
+        "cinematic"
+      ],
+      "tags": [
+        "china",
+        "splash",
+        "recorded"
+      ]
+    },
+    {
+      "id": "acoustic-tom",
+      "type": "tom",
+      "label": "Acoustic Tom",
+      "genres": [
+        "rock",
+        "metal",
+        "cinematic",
+        "gospel-soul",
+        "country-pop",
+        "jazz-lounge"
+      ],
+      "tags": [
+        "acoustic",
+        "recorded"
+      ]
+    },
+    {
+      "id": "synth-tom",
+      "type": "tom",
+      "label": "Synth Tom",
+      "genres": [
+        "synthwave",
+        "pop",
+        "techno",
+        "edm-anthem"
+      ],
+      "tags": [
+        "electronic"
+      ]
+    }
+  ]
+}
