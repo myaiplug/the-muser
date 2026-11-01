@@ -12,6 +12,11 @@ Qwen3-30B-A3B — Primary Orchestration LLM
   Source: https://huggingface.co/Qwen/Qwen3-30B-A3B
   Usage: Local inference via Ollama for agentic composition orchestration
 
+Qwen3-8B — Orchestration LLM on the 8gb hardware profile
+  License: Apache License 2.0
+  Source: https://huggingface.co/Qwen/Qwen3-8B
+  Usage: Local inference via Ollama (qwen3:8b) on 8 GB GPUs
+
 Ollama — Local LLM Server
   License: MIT License
   Source: https://github.com/ollama/ollama
@@ -54,9 +59,12 @@ fish-hifigan Vocoder
   Usage: Recommended commercial-safe vocoder for DiffSinger.
 
 Seed-VC — Zero-Shot Voice Conversion
-  License: MIT License
+  License: GNU General Public License v3.0 (GPL-3.0)
   Source: https://github.com/Plachtaa/seed-vc
-  Usage: Zero-shot voice conversion without model training
+  Usage: OPTIONAL zero-shot voice conversion without model training.
+         Cloned separately into models/seed-vc and imported in-process by
+         src/voice/seedvc_wrapper.py; redistributing it with The Muser
+         requires GPL-3.0 compliance for the combined work.
 
 Demucs — Music Source Separation
   License: MIT License

@@ -130,8 +130,14 @@ if ! curl -s "$OLLAMA_HOST/api/version" >/dev/null 2>&1; then
     sleep 3
 fi
 
-echo "Pulling qwen3:30b-a3b (this may take a while on first run)..."
-"$LOCAL_DIR/bin/ollama" pull qwen3:30b-a3b
+# qwen3:30b-a3b (~19 GB) on 24 GB cards, qwen3:8b (~5.2 GB) on the 8gb
+# hardware profile. MUSER_OLLAMA_MODEL / MUSER_HARDWARE_PROFILE override.
+OLLAMA_PULL_MODEL="${MUSER_OLLAMA_MODEL:-}"
+if [ -z "$OLLAMA_PULL_MODEL" ]; then
+    OLLAMA_PULL_MODEL="$(cd "$PROJECT_ROOT" && python3 -c 'from src.orchestrator.config import OLLAMA_MODEL; print(OLLAMA_MODEL)' 2>/dev/null || echo qwen3:30b-a3b)"
+fi
+echo "Pulling $OLLAMA_PULL_MODEL (this may take a while on first run)..."
+"$LOCAL_DIR/bin/ollama" pull "$OLLAMA_PULL_MODEL"
 
 if [ "$STARTED_OLLAMA" = true ]; then
     kill "$OLLAMA_PID" 2>/dev/null || true

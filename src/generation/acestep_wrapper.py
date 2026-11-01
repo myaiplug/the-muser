@@ -43,6 +43,7 @@ from src.orchestrator.config import (
     ACESTEP_V15_LM_CFG_SCALE,
     ACESTEP_V15_API_URL,
     ACESTEP_V15_API_KEY,
+    LOW_VRAM,
 )
 from src.utils.model_manager import get_manager
 
@@ -60,6 +61,17 @@ def _get_temp_output_dir() -> str:
     out_dir = tempfile.mkdtemp(prefix="gen_", dir=str(base))
     logger.debug("Created temporary output directory: %s", out_dir)
     return out_dir
+
+
+def _release_cuda_cache() -> None:
+    """Return cached CUDA blocks to the driver (helps 8 GB cards between runs)."""
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except (ImportError, RuntimeError) as exc:
+        logger.debug("Could not release CUDA cache: %s", exc)
 
 
 def _is_silent(wav_path: str, threshold_db: float = -50.0) -> bool:
@@ -370,6 +382,9 @@ def _generate_audio_v15(
     except Exception as exc:
         logger.error("ACE-Step v1.5 generation failed: %s", exc)
         return []
+    finally:
+        if LOW_VRAM:
+            _release_cuda_cache()
 
     if not result.success:
         logger.error("ACE-Step v1.5 generation error: %s", result.error or result.status_message)

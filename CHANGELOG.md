@@ -3,6 +3,25 @@
 All notable changes to The Muser are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- `MUSER_HARDWARE_PROFILE` (`auto` | `8gb` | `24gb`): `auto` uses `8gb` on GPUs under
+  20 GB (detected with `nvidia-smi`, no torch import) and keeps the original `24gb` path otherwise.
+- `8gb` profile defaults: ACE-Step 1.5 `acestep-v15-turbo` DiT + `acestep-5Hz-lm-0.6B` LM on the
+  `pt` backend, CPU + DiT offload, INT8, lower VRAM budgets, ACE-Step v1.0 with `cpu_offload`,
+  Ollama `qwen3:8b`, and Ollama models unloaded (`keep_alive: 0`) before a GPU model loads.
+- ACE-Step 1.5 5Hz LM is now initialized when enabled (`MUSER_ACESTEP_INIT_LM`, default on for
+  `8gb`); float32 on pre-Ampere GPUs; failures fall back to DiT-only.
+- `scripts/setup_models.sh` clones ACE-Step 1.5 into `models/ace-step-v15`.
+- README section "8 GB GPU (e.g. RTX 2080 Super)".
+
+### Changed
+- `MUSER_OLLAMA_MODEL` is now honored by the provider chains and the web UI default.
+
+### Fixed
+- Seed-VC is GPL-3.0, not MIT, in THIRD_PARTY_LICENSES.md and NOTICE.
+
 ## [1.0.0] - 2026-05-26
 
 ### Added
