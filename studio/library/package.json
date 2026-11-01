@@ -10,7 +10,8 @@
     "taxonomy": "node taxonomy/build.mjs",
     "build": "node scripts/build-index.mjs",
     "validate": "node scripts/validate.mjs",
-    "serve": "node src/server.mjs"
+    "serve": "node src/server.mjs",
+    "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "express": "^4.21.2",

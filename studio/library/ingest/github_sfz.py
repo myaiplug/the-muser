@@ -10,7 +10,7 @@ round-robin 1, mix the available microphones (weights below), fold to mono, trim
 
 Usage:  python3 github_sfz.py [--cache DIR]       (needs network, no API key)
 """
-import argparse, json, re, sys, urllib.parse, urllib.request
+import argparse, json, os, re, sys, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
@@ -166,7 +166,11 @@ def plan():
 
 
 def http(url, binary=True):
-    req = urllib.request.Request(url, headers=UA)
+    h = dict(UA)
+    tok = os.environ.get("GITHUB_TOKEN")  # optional: only raises the API rate limit; never required
+    if tok and url.startswith("https://api.github.com/"):
+        h["Authorization"] = f"Bearer {tok}"
+    req = urllib.request.Request(url, headers=h)
     with urllib.request.urlopen(req, timeout=60) as r:
         d = r.read()
     return d if binary else d.decode()

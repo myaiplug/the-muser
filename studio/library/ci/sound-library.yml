@@ -1,0 +1,99 @@
+# Install: copy to .github/workflows/sound-library.yml. It lives here because the push token has no `workflow` scope.
+name: Sound library
+
+# Weekly: re-ingest from the no-key sources, re-verify licences, validate, test, and back up
+# the metadata (records, sounds.json, ATTRIBUTIONS.md) as a workflow artifact.
+# Needs no secrets. The Freesound step runs only if the FREESOUND_API_KEY secret exists.
+# Audio is NOT committed or backed up by this workflow beyond the one-week artifact of the
+# metadata; audio is regenerated deterministically from the sources.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - "studio/library/**"
+      - ".github/workflows/sound-library.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  library:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studio/library
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: studio/library/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          npm ci
+          python -m pip install --quiet numpy scipy soundfile
+
+      - name: Unit tests (validator, API, Mongo parity, ingesters)
+        run: |
+          npm test
+          python test/test_ingest.py
+
+      - name: Validate committed library (licence allowlist, attribution, hashes)
+        run: |
+          npm run build
+          npm run validate
+
+      - name: Re-ingest upstream sources (schedule / manual only)
+        if: github.event_name != 'pull_request'
+        continue-on-error: true # an upstream outage must not hide the validation result below
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # rate-limit headroom only, not a secret you configure
+        run: |
+          python ingest/synth_firstparty.py
+          python ingest/github_sfz.py
+          python ingest/archive_org.py
+
+      - name: Freesound ingest (skipped without FREESOUND_API_KEY)
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          FREESOUND_API_KEY: ${{ secrets.FREESOUND_API_KEY }}
+        run: python ingest/freesound.py
+
+      - name: Rebuild index and validate again
+        if: github.event_name != 'pull_request'
+        run: |
+          npm run build
+          npm run validate
+
+      - name: Drift report
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "### Sound library"
+            echo
+            node -e "const s=require('./sounds.json').stats;console.log('Total: '+s.total);console.log('By type: '+JSON.stringify(s.by_type));console.log('By source: '+JSON.stringify(s.by_source))"
+            echo
+            echo "Changed files vs checkout:"
+            git status --short . | head -40
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Back up metadata
+        run: |
+          mkdir -p backup
+          tar -czf "backup/sound-library-metadata-$(date -u +%F).tar.gz" data/records sounds.json ATTRIBUTIONS.md taxonomy/taxonomy.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sound-library-metadata
+          path: studio/library/backup/*.tar.gz
+          retention-days: 90
