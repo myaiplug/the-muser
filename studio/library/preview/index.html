@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoDAW Sound Library</title>
+<style>
+  /* Uses the app's skin tokens when embedded; falls back to a dark mono look standalone. */
+  :root { --bg:#0b0b0c; --tx:#e8e8e6; --mut:#8a8a86; --ln:#2a2a2c; --hot:#ff5a1f; --hot-ink:#0b0b0c; --fu:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --fs:13px; }
+  *,*::before,*::after { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--tx); font:var(--fs)/1.4 var(--fu); }
+  header { position:sticky; top:0; z-index:2; background:var(--bg); border-bottom:1px solid var(--ln); padding:10px 12px; display:grid; gap:8px; }
+  h1 { margin:0; font-size:14px; letter-spacing:.08em; text-transform:uppercase; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  select, input[type=search] { background:var(--bg); color:var(--tx); border:1px solid var(--ln); padding:8px; font:inherit; min-height:40px; flex:1 1 140px; min-width:0; border-radius:0; }
+  select:focus, input:focus, button:focus-visible { outline:1px solid var(--hot); outline-offset:1px; }
+  .chip { background:none; color:var(--tx); border:1px solid var(--ln); padding:6px 10px; font:inherit; min-height:34px; cursor:pointer; }
+  .chip.on { background:var(--hot); color:var(--hot-ink); border-color:var(--hot); }
+  .meta { color:var(--mut); font-size:11px; }
+  ul { list-style:none; margin:0; padding:0; }
+  li { display:grid; grid-template-columns:44px 1fr; gap:8px; padding:10px 12px; border-bottom:1px solid var(--ln); align-items:center; }
+  li button.play { width:44px; height:44px; background:none; color:var(--hot); border:1px solid var(--ln); font:inherit; font-size:16px; cursor:pointer; }
+  li.playing button.play { background:var(--hot); color:var(--hot-ink); }
+  .t { font-weight:600; overflow-wrap:anywhere; }
+  .s { color:var(--mut); font-size:11px; overflow-wrap:anywhere; }
+  .s a { color:var(--mut); }
+  .tag { display:inline-block; border:1px solid var(--ln); padding:0 5px; margin:2px 4px 0 0; font-size:10px; color:var(--mut); }
+  .more { display:block; width:calc(100% - 24px); margin:12px; }
+  audio { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NoDAW Sound Library <span class="meta" id="count"></span></h1>
+  <div class="row">
+    <input id="q" type="search" placeholder="search (e.g. punchy, rimshot)" aria-label="Search">
+    <select id="genre" aria-label="Genre"><option value="">all genres</option></select>
+    <select id="license" aria-label="License"><option value="">all licenses</option></select>
+  </div>
+  <div class="row" id="types" role="group" aria-label="Type"></div>
+  <div class="meta" id="mode"></div>
+</header>
+<ul id="list"></ul>
+<button class="chip more" id="more" hidden>load more</button>
+<audio id="a" preload="none"></audio>
+<script>
+const $ = (id) => document.getElementById(id)
+const BASE = new URL('../', location.href) // library root: audio/ and sounds.json live here
+const TYPES = ['kick','snare','clap','hat','open-hat','perc','808','cymbal','tom']
+const PAGE = 40
+let type = '', offset = 0, useApi = false, all = null, tax = null, token = 0
+
+async function init() {
+  try { const r = await fetch(new URL('api/health', BASE), { cache: 'no-store' }); useApi = r.ok && (await r.json()).ok } catch { useApi = false }
+  $('mode').textContent = useApi ? 'live API' : 'static demo (sounds.json)'
+  const data = await (await fetch(new URL('sounds.json', BASE))).json()
+  all = data.sounds
+  tax = useApi ? await (await fetch(new URL('api/taxonomy', BASE))).json() : null
+  const genres = tax ? tax.genres.map((g) => [g.id, g.name || g.id]) : [...new Set(all.flatMap((s) => s.genres))].sort().map((g) => [g, g])
+  for (const [id, n] of genres) $('genre').add(new Option(n, id))
+  for (const l of [...new Set(all.map((s) => s.license))].sort()) $('license').add(new Option(l, l))
+  const tb = $('types')
+  for (const t of ['', ...TYPES]) {
+    const b = document.createElement('button'); b.className = 'chip' + (t === '' ? ' on' : ''); b.textContent = t || 'all'; b.dataset.t = t
+    b.onclick = () => { type = t; for (const x of tb.children) x.classList.toggle('on', x.dataset.t === t); run(true) }
+    tb.append(b)
+  }
+  $('q').oninput = debounce(() => run(true), 150)
+  $('genre').onchange = $('license').onchange = () => run(true)
+  $('more').onclick = () => run(false)
+  run(true)
+}
+const debounce = (f, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms) } }
+
+async function fetchPage() {
+  const q = $('q').value.trim().toLowerCase(), genre = $('genre').value, lic = $('license').value
+  if (useApi) {
+    const u = new URL('api/sounds', BASE)
+    u.searchParams.set('limit', PAGE); u.searchParams.set('offset', offset)
+    if (type) u.searchParams.set('type', type)
+    if (genre) u.searchParams.set('genre', genre)
+    if (lic) u.searchParams.set('license', lic)
+    if (q) u.searchParams.set('q', q)
+    return (await fetch(u)).json()
+  }
+  const items = all.filter((s) => (!type || s.type === type) && (!genre || s.genres.includes(genre)) && (!lic || s.license === lic) &&
+    (!q || `${s.title} ${s.tags.join(' ')} ${s.category}`.toLowerCase().includes(q)))
+  return { total: items.length, items: items.slice(offset, offset + PAGE) }
+}
+
+async function run(reset) {
+  const my = ++token
+  if (reset) { offset = 0; $('list').textContent = '' }
+  const d = await fetchPage()
+  if (my !== token) return
+  for (const s of d.items) $('list').append(row(s))
+  offset += d.items.length
+  $('count').textContent = `${d.total} sounds`
+  $('more').hidden = offset >= d.total
+  if (!d.total) $('list').innerHTML = '<li><span></span><span class="s">No sounds match.</span></li>'
+}
+
+function row(s) {
+  const li = document.createElement('li')
+  const b = document.createElement('button'); b.className = 'play'; b.textContent = '\u25B6'; b.setAttribute('aria-label', 'Play ' + s.title)
+  b.onclick = () => play(li, b, s)
+  const d = document.createElement('div')
+  const t = document.createElement('div'); t.className = 't'; t.textContent = s.title
+  const m = document.createElement('div'); m.className = 's'
+  m.append(`${s.type} \u00B7 ${s.duration_ms} ms \u00B7 `)
+  const a = document.createElement('a'); a.href = s.license_url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = s.license; m.append(a, ` \u00B7 ${s.author}`)
+  const tags = document.createElement('div')
+  for (const g of s.tags.slice(0, 6)) { const e = document.createElement('span'); e.className = 'tag'; e.textContent = g; tags.append(e) }
+  d.append(t, m, tags); li.append(b, d); return li
+}
+
+function play(li, b, s) {
+  const a = $('a')
+  const same = a.dataset.id === s.id
+  document.querySelectorAll('li.playing').forEach((x) => { x.classList.remove('playing'); x.querySelector('.play').textContent = '\u25B6' })
+  if (same && !a.paused) { a.pause(); return }
+  a.dataset.id = s.id; a.src = new URL(s.file, BASE).href; a.currentTime = 0
+  a.play().then(() => { li.classList.add('playing'); b.textContent = '\u25A0' }).catch(() => {})
+  a.onended = () => { li.classList.remove('playing'); b.textContent = '\u25B6' }
+}
+init()
+</script>
+</body>
+</html>
