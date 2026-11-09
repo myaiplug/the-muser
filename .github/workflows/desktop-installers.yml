@@ -1,0 +1,28 @@
+name: Windows installer
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+    branches: [feature/windows-full-installer]
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm, cache-dependency-path: studio/web/package-lock.json }
+      - name: Build web UI
+        working-directory: studio/web
+        run: |
+          npm ci
+          npm run build
+      - name: Stage installer payload
+        run: python packaging/windows/stage-payload.py
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Compile installer
+        run: iscc /DAppVersion=1.1.0 packaging\windows\muser.iss
+      - uses: actions/upload-artifact@v4
+        with: { name: TheMuser-Setup, path: dist/installer/*.exe }
