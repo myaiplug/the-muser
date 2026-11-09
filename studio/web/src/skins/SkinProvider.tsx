@@ -35,7 +35,17 @@ export const useSkin = () => {
 export function applySkinAttr(id: SkinId) {
   document.documentElement.dataset.skin = id
   const m = document.querySelector('meta[name=theme-color]')
-  if (m) m.setAttribute('content', ({ cathode: '#0D0E0F', terrain: '#000000', score: '#ECE9E2', horology: '#f5f1e7', metro: '#141414', vend: '#d5d9df' } satisfies Record<SkinId, string>)[id])
+  if (m) m.setAttribute('content', ({
+    cathode: '#0D0E0F',
+    terrain: '#000000',
+    score: '#ECE9E2',
+    horology: '#f5f1e7',
+    metro: '#141414',
+    vend: '#d5d9df',
+    liminal: '#0a0a12',
+    spectra: '#050508',
+    orbit: '#08060e',
+  } satisfies Record<SkinId, string>)[id])
 }
 
 export function SkinProvider({ children }: { children: ReactNode }) {
