@@ -225,11 +225,11 @@ const tail = (s: number) => Math.floor(s * SR)
 
 export const rhodes: Voice = (f, gate, vel, r) => {
   const rel = tail(0.3), n = gate + rel, o = new Float32Array(n)
-  const idx = 0.7 + 1.7 * vel, trem = r.random() * TAU
+  const idx = 0.35 + 0.9 * vel, trem = r.random() * TAU
   for (let i = 0; i < n; i++) {
     const t = i / SR
     const car = Math.sin(TAU * f * t + idx * Math.exp(-t * 4) * Math.sin(TAU * f * t))
-    const tine = 0.22 * vel * Math.sin(TAU * f * 14 * t + 0.4) * Math.exp(-t * 26)
+    const tine = 0.05 * vel * Math.sin(TAU * f * 14 * t + 0.4) * Math.exp(-t * 26)
     const bark = 0.12 * Math.sin(TAU * f * 2 * t) * Math.exp(-t * 2.2)
     o[i] = (car + tine + bark) * env(i, gate, rel, 0.003, 1.6, 0.35) * (0.6 + 0.4 * vel) * (1 + 0.06 * Math.sin(TAU * 5 * t + trem))
   }
@@ -237,14 +237,14 @@ export const rhodes: Voice = (f, gate, vel, r) => {
 }
 export const piano: Voice = (f, gate, vel, r) => {
   const rel = tail(0.35), n = gate + rel, o = new Float32Array(n)
-  const parts = Math.max(3, Math.min(10, Math.floor(7000 / f))), B = 0.00012
+  const parts = Math.max(3, Math.min(12, Math.floor(6500 / f))), B = 0.000035
   const ph = Array.from({ length: parts }, () => r.random() * 0.3)
   for (let i = 0; i < n; i++) {
     const t = i / SR
     let s = 0
     for (let h = 1; h <= parts; h++) {
       const ff = f * h * Math.sqrt(1 + B * h * h)
-      s += (Math.sin(TAU * ff * t + ph[h - 1]) / Math.pow(h, 0.9 + (1 - vel) * 0.8)) * Math.exp(-t * (1.1 + h * 0.55 + f / 700))
+      s += ((Math.sin(TAU * ff * 0.999 * t + ph[h - 1]) + Math.sin(TAU * ff * 1.0013 * t + ph[h - 1])) * 0.5 / Math.pow(h, 1.15 + (1 - vel) * 0.7)) * Math.exp(-t * (0.65 + h * 0.3 + f / 1100))
     }
     const hammer = (r.random() * 2 - 1) * Math.exp(-t * 280) * 0.18 * vel
     o[i] = (s * 0.8 + hammer) * env(i, gate, rel, 0.002, 0.0001, 1)
@@ -265,7 +265,7 @@ export const organ: Voice = (f, gate, vel, r) => {
   }
   return o
 }
-const DET = [-24, -14, -5, 0, 6, 15, 25]
+const DET = [-30, -18, -7, 0, 7, 18, 30]
 export const supersaw: Voice = (f, gate, vel, r) => {
   const rel = tail(0.22), n = gate + rel, o = new Float32Array(n)
   const ph = DET.map(() => r.random()), dt = DET.map((c) => (f * Math.pow(2, c / 1200)) / SR)
@@ -274,7 +274,7 @@ export const supersaw: Voice = (f, gate, vel, r) => {
     for (let k = 0; k < DET.length; k++) { ph[k] += dt[k]; if (ph[k] >= 1) ph[k] -= 1; s += blepSaw(ph[k], dt[k]) * (k === 3 ? 1.1 : 0.8) }
     o[i] = (s / 5) * env(i, gate, rel, 0.008, 3, 0.8) * (0.6 + 0.4 * vel)
   }
-  return lp1(o, Math.min(9000, 2500 + f * 8))
+  return svfLP(o, i => 1100 + (3400 + vel * 1700) * Math.exp(-i / (SR * 0.22)), 0.85)
 }
 export const pad: Voice = (f, gate, vel, r) => {
   const rel = tail(0.7), n = gate + rel, o = new Float32Array(n)
@@ -389,8 +389,8 @@ export const pluckSynth: Voice = (f, gate, vel, r) => {
     for (let k = 0; k < 2; k++) { const d = (f * (k ? 1.004 : 0.996)) / SR; ph[k] += d; if (ph[k] >= 1) ph[k] -= 1; s += blepSaw(ph[k], d) }
     raw[i] = s / 2
   }
-  const y = svfLP(raw, (i) => 400 + (2800 + f * 3) * Math.exp(-(i / SR) * 14) * (0.5 + 0.5 * vel), 1.4)
-  for (let i = 0; i < n; i++) y[i] *= env(i, gate, rel, 0.002, 6, 0.15)
+  const y = svfLP(raw, (i) => 320 + (1900 + f * 2) * Math.exp(-(i / SR) * 8) * (0.5 + 0.5 * vel), 0.9)
+  for (let i = 0; i < n; i++) y[i] *= env(i, gate, rel, 0.006, 4, 0.22)
   return y
 }
 export const squareLead: Voice = (f, gate, vel, r) => {

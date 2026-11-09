@@ -240,7 +240,7 @@ async function generateTrack(o: { prompt: string; duration_s: number; bpm?: numb
   msg(`Browser demo synth: ${spec.genre}, ${spec.bpm} BPM, ${keyName(spec)}`)
   const r = await renderSpec(spec, (p, m) => msg(m + ` (${Math.round(p * 100)}%)`))
   const rec = addTrack(
-    { title: o.title || o.prompt.slice(0, 48) || 'Demo loop', source: 'demo-synth', prompt: o.prompt, bpm: spec.bpm, key: keyName(spec), notes: DEMO_NOTE, meta: { demo_synth: true, genre: spec.genre } },
+    { title: o.title || o.prompt.slice(0, 48) || 'Demo loop', source: 'demo-synth', prompt: o.prompt, bpm: spec.bpm, key: keyName(spec), notes: DEMO_NOTE, meta: { demo_synth: true, genre: spec.genre, demo_recipe: 'modern-hooks-cc0-v1', sample_ids: r.samples } },
     r.mix, { hidden: r.stems, notes: r.notes },
   )
   return { track: pubOf(rec), engine: 'demo-synth' }

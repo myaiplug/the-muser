@@ -1,9 +1,11 @@
 // Genre-aware procedural synthesizer for the browser demo. Drums, bass, chords and lead are written by
-// rule (see genres.ts) and rendered by plain DSP (see voices.ts). This is NOT AI generation and the UI says so.
-import { type Audio, biquad, scale, peak, sum, saturate, bitcrush, delayFx, chorus, widen, reverb, compress } from './dsp'
+// rule (see genres.ts), using bundled CC0 drum samples with DSP fallback. This is NOT AI generation.
+import { type Audio, biquad, scale, peak, sum, saturate, bitcrush, delayFx, chorus, widen, reverb, compress, limit, truePeakDb, db2lin } from './dsp'
 import * as V from './voices'
 import { SR, midiHz, rngFor, fnv, lp1, type Rng } from './voices'
 import { KICKS, SNARES, MODES, PROFILES, matchProfile, profileFor, DEFAULT_PROFILE, PROFILE_BY_ID, type Profile, type Mode, type ChordVoice, type ChordLayer, type Lane } from './genres'
+
+import { loadRenderKit, sampleBass, type SampleKit } from './samples'
 
 export { SR }
 const NOTE_INDEX: Record<string, number> = { C: 0, 'C#': 1, DB: 1, D: 2, 'D#': 3, EB: 3, E: 4, F: 5, 'F#': 6, GB: 6, G: 7, 'G#': 8, AB: 8, A: 9, 'A#': 10, BB: 10, B: 11 }
@@ -168,11 +170,17 @@ class Timing {
 }
 
 // ------------------------------------------------------------------ drums
-function renderDrums(s: Spec, plans: BarPlan[], total: number, r: Rng, tm: Timing): Stem {
+function renderDrums(s: Spec, plans: BarPlan[], total: number, r: Rng, tm: Timing, kit: SampleKit): Stem {
   const p = s.profile, buf = new Float32Array(total), notes: NoteEvent[] = [], kicks: number[] = []
   const human = p.human ?? 4, stepDur = tm.stepDur, barS = stepDur * 16
   const cache = new Map<string, Float32Array[]>(), hits = new Map<string, number>()
   const shot = (name: string): Float32Array => {
+    const recorded = kit.get(name)
+    if (recorded) {
+      const gain = ({ kick: 1, snare: 0.8, clap: 0.7, hat: 0.22, ohat: 0.28, ride: 0.3, shaker: 0.25 } as Record<string, number>)[name.split(':')[0]] ?? 0.55
+      if (!cache.has(name)) cache.set(name, [Float32Array.from(recorded.mono, x => x * gain)])
+      return cache.get(name)![0]
+    }
     let v = cache.get(name)
     if (!v) { const n = /^(hat|ohat|shaker|rim|snare|clap|snap|brush)/.test(name) ? 3 : 1; v = Array.from({ length: n }, () => makeShot(name, r)); cache.set(name, v) }
     const k = hits.get(name) ?? 0; hits.set(name, k + 1)
@@ -233,7 +241,7 @@ function renderDrums(s: Spec, plans: BarPlan[], total: number, r: Rng, tm: Timin
       }
     }
     if (q.crash) {
-      add(buf, V.crash(r), bt * SR, 0.7)
+      add(buf, kit.get('crash')?.mono ?? V.crash(r), bt * SR, 0.35)
       notes.push({ stem: 'drums', pitch: 49, start: bt, dur: 0.8, vel: 100 })
     }
     if (q.riser > 0) add(buf, V.riser(q.riser, r), bt * SR, 0.55)
@@ -274,7 +282,7 @@ function holdSteps(pat: string, st: number, hold: number): number {
 }
 function patFor(pats: string[], b: number): string { const n = pats.length; return pats[b % 4 === 3 && n > 1 ? n - 1 : b % Math.max(1, n > 1 ? n - 1 : 1)] }
 
-function renderBass(s: Spec, plans: BarPlan[], total: number, r: Rng, tm: Timing): Stem {
+function renderBass(s: Spec, plans: BarPlan[], total: number, r: Rng, tm: Timing, kit: SampleKit): Stem {
   const p = s.profile, bs = p.bass, buf = new Float32Array(total), notes: NoteEvent[] = []
   if (!bs) return { mono: buf, notes, kicks: [] }
   const stepDur = tm.stepDur, human = (p.human ?? 4) * 0.4
@@ -304,7 +312,8 @@ function renderBass(s: Spec, plans: BarPlan[], total: number, r: Rng, tm: Timing
       const f = midiHz(pitch), gate = Math.round(gateSteps * stepDur * SR * 0.96)
       const slide = bs.glide && prevF && prevF !== f && t - prevEnd < stepDur * 1.5 && Math.abs(Math.log2(f / prevF)) <= 1
       const vel = Math.min(1.1, (ch === 'x' || ch === 'X' ? 0.9 : 0.8) * q.bass * q.vel * (0.93 + r.random() * 0.14))
-      const sig = V.bassNote(bs.kind, f, gate, vel, r, { glideFrom: slide ? prevF : undefined, glideTau: bs.glide, lfoHz: bs.lfo ? bs.lfo * (s.bpm / 140) : undefined, drive: bs.drive, decay: bs.decay })
+      const sampled = bs.kind === 'sub808' ? kit.get('808') : undefined
+      const sig = sampled ? sampleBass(sampled, pitch, gate, vel, slide ? 69 + 12 * Math.log2(prevF / 440) : undefined, bs.glide) : V.bassNote(bs.kind, f, gate, vel, r, { glideFrom: slide ? prevF : undefined, glideTau: bs.glide, lfoHz: bs.lfo ? bs.lfo * (s.bpm / 140) : undefined, drive: bs.drive, decay: bs.decay })
       add(buf, sig, t * SR, 1)
       notes.push({ stem: 'bass', pitch, start: Math.max(0, t), dur: gateSteps * stepDur, vel: Math.round(vel * 100) })
       prevF = f; prevEnd = t + gateSteps * stepDur
@@ -362,56 +371,56 @@ function renderChords(s: Spec, plans: BarPlan[], total: number, r: Rng, tm: Timi
   return { mono: buf, notes, kicks: [] }
 }
 
+export type HookNote = { step: number; pitch: number; steps: number; accent: boolean }
+/** Write once, repeat A A' A B. Randomness chooses a hook, never walks between notes. */
+export function composeHook(s: Spec): HookNote[][] {
+  const L = s.profile.lead
+  if (!L) return [[], [], [], []]
+  const r = rngFor(s.seed ^ 0x484f4f4b), sc = MODES[s.mode]
+  const tonic = nearest(s.keyRoot, L.base - 3)
+  const scaleNote = (degree: number) => tonic + sc[((degree % 7) + 7) % 7] + 12 * Math.floor(degree / 7)
+  // Two to four notes with an identifiable contour, not a stream of pentatonic plinks.
+  const contours = [[0, 2, 1, 0], [2, 1, 0, 1], [0, 1, 2, 1], [2, 0, 1, 0]]
+  const contour = contours[r.int(0, contours.length)]
+  const rhythm = L.rhythms[r.int(0, L.rhythms.length)]
+  const attacks = [...rhythm].flatMap((ch, i) => ch === '.' ? [] : [i]).slice(0, 4)
+  const chords = Array.from({ length: 4 }, (_, b) => chordPcs(s, s.progression[b % s.progression.length], 4))
+  // An anchor shared by A's harmonies makes the actual pitch recur, not just its rhythm.
+  const common = chords[0].filter(pc => chords[2].includes(pc))
+  const anchor = nearest(common[0] ?? chords[0][0], scaleNote(contour[0]))
+  return chords.map((pcs, b) => {
+    let prev = anchor
+    return attacks.map((step, k) => {
+      const variation = b === 1 && k === attacks.length - 1 ? -1 : b === 3 && k === attacks.length - 1 ? -2 : 0
+      const target = k === 0 ? anchor : anchor + scaleNote(contour[k] + variation) - scaleNote(contour[0])
+      // Strong beats are chord tones. Offbeats can connect by scale steps.
+      const choices = step % 4 === 0 ? pcs.flatMap(pc => [nearest(pc, target) - 12, nearest(pc, target), nearest(pc, target) + 12]) : Array.from({ length: 15 }, (_, i) => scaleNote(i - 7))
+      const close = choices.filter(n => Math.abs(n - prev) <= 4)
+      const pool = k && close.length ? close : choices
+      const pitch = pool.sort((a, z) => Math.abs(a - target) - Math.abs(z - target) || Math.abs(a - prev) - Math.abs(z - prev))[0]
+      prev = pitch
+      const next = attacks[k + 1] ?? 16
+      return { step, pitch, steps: Math.max(1, Math.min(next - step - 0.4, L.len ?? 4)), accent: k === 0 }
+    })
+  })
+}
+
 function renderLead(s: Spec, plans: BarPlan[], total: number, r: Rng, tm: Timing): Stem {
-  const p = s.profile, L = p.lead, buf = new Float32Array(total), notes: NoteEvent[] = []
+  const L = s.profile.lead, buf = new Float32Array(total), notes: NoteEvent[] = []
   if (!L) return { mono: buf, notes, kicks: [] }
-  const voice = VOICES[L.voice], sc = MODES[s.mode], stepDur = tm.stepDur, human = (p.human ?? 4) * 0.8
-  const pool = L.pent ? (MINORISH.includes(s.mode) ? [0, 2, 3, 4, 6] : [0, 1, 2, 4, 5]) : [0, 1, 2, 3, 4, 5, 6]
-  const tonic = L.base - 12 + mod12(s.keyRoot - (L.base - 12))
-  const toMidi_ = (pi: number) => tonic + sc[pool[pi % pool.length]] + 12 * Math.floor(pi / pool.length)
-  const lastIdx = pool.length * 2 - 1
-  // build one four bar phrase: A A' A B, repeated for the whole piece so the hook is memorable
-  type Bar = { pat: string; idx: number[] }
-  const mk = (pat: string, start: number): Bar => {
-    let pi = start
-    const idx: number[] = []
-    for (let i = 0; i < pat.length; i++) if (pat[i] !== '.') {
-      pi = Math.max(0, Math.min(lastIdx, pi + [-2, -1, 0, 1, 1, 2][r.int(0, 6)]))
-      idx.push(pi)
-    }
-    return { pat, idx }
-  }
-  const rh = L.rhythms
-  const a = mk(rh[r.int(0, rh.length)], pool.length + r.int(0, 3))
-  const a2: Bar = { pat: a.pat, idx: a.idx.map((x, i) => (i >= a.idx.length - 2 ? Math.max(0, Math.min(lastIdx, x + (r.random() < 0.5 ? 1 : -1))) : x)) }
-  const bb = mk(rh[r.int(0, rh.length)], a.idx[a.idx.length - 1] ?? pool.length)
-  bb.idx = bb.idx.map((x, i) => (i === bb.idx.length - 1 ? pool.length : x))
-  const phrase = [a, a2, a, bb]
-  const on = plans.map((q, b) => (q.lead >= 1 ? true : q.lead > 0 ? b % 2 === 0 : false) && (b % 4 === 0 ? true : r.random() < (L.prob ?? 1)))
+  const voice = VOICES[L.voice], phrase = composeHook(s), stepDur = tm.stepDur
   for (let b = 0; b < plans.length; b++) {
     const q = plans[b]
-    if (!on[b]) continue
-    const bar = phrase[b % 4]
-    const pcs = chordPcs(s, s.progression[b % s.progression.length], 4)
-    const att: number[] = []
-    for (let st = 0; st < 16; st++) if (bar.pat[st] !== '.') att.push(st)
-    att.forEach((st, k) => {
-      if (q.cut && st >= 8) return
-      let pitch = toMidi_(bar.idx[k])
-      if (st % 4 === 0 && !pcs.includes(mod12(pitch))) {
-        let best = pitch, bd = 99
-        for (const pc of pcs) { const c = nearest(pc, pitch); for (const cand of [c, c + 12]) { const d = Math.abs(cand - pitch); if (d < bd) { bd = d; best = cand } } }
-        if (bd <= 3) pitch = best
-      }
-      if (b % 4 === 3 && k === att.length - 1) pitch = nearest(pcs[0], pitch)
-      const nextSt = k + 1 < att.length ? att[k + 1] : 16
-      const steps = Math.max(1, Math.min(nextSt - st, L.len ?? 2))
-      const gate = Math.round(steps * stepDur * SR * 0.95)
-      const t = tm.at(b, st, human)
-      const vel = Math.min(1.05, (bar.pat[st] === 'X' ? 1 : 0.85) * q.vel * (L.gain ?? 1) * (0.9 + r.random() * 0.2))
-      add(buf, voice(midiHz(pitch), gate, vel, r), t * SR, 1)
-      notes.push({ stem: 'lead', pitch, start: Math.max(0, t), dur: steps * stepDur, vel: Math.round(Math.min(1, vel) * 100) })
-    })
+    // Keep whole phrases intact. Verse hooks are softer, not randomly missing half their notes.
+    if (!q.lead) continue
+    for (const n of phrase[b % 4]) {
+      if (q.cut && n.step >= 8) continue
+      const gate = Math.round(n.steps * stepDur * SR * 0.92)
+      const t = Math.max(0, tm.at(b, n.step, (s.profile.human ?? 4) * 0.5))
+      const vel = (n.accent ? 0.86 : 0.7) * q.vel * (q.lead < 1 ? 0.8 : 1) * (L.gain ?? 1) * (0.97 + r.random() * 0.06)
+      add(buf, voice(midiHz(n.pitch), gate, vel, r), t * SR, 1)
+      notes.push({ stem: 'lead', pitch: n.pitch, start: t, dur: n.steps * stepDur, vel: Math.round(Math.min(1, vel) * 100) })
+    }
   }
   return { mono: buf, notes, kicks: [] }
 }
@@ -440,25 +449,27 @@ function duck(a: Audio, kicks: number[], depth: number, rel = 0.16): void {
 const softclip = (a: Audio, lim = 0.95) => { for (const ch of a.ch) for (let i = 0; i < ch.length; i++) { const x = ch[i]; if (Math.abs(x) > 0.7) ch[i] = Math.sign(x) * (0.7 + (lim - 0.7) * Math.tanh((Math.abs(x) - 0.7) / (lim - 0.7))) } }
 
 export const STEM_NAMES = ['drums', 'bass', 'chords', 'lead'] as const
-export type Rendered = { mix: Audio; stems: Record<string, Audio>; notes: NoteEvent[]; spec: Spec }
+export type Rendered = { mix: Audio; stems: Record<string, Audio>; notes: NoteEvent[]; spec: Spec; samples: Record<string, string> }
 const tick = () => new Promise<void>((r) => setTimeout(r, 0))
-const TARGET_RMS = { drums: 0.105, bass: 0.12, chords: 0.105, lead: 0.095 }
+const TARGET_RMS = { drums: 0.14, bass: 0.15, chords: 0.075, lead: 0.09 }
 
 export async function renderSpec(s: Spec, progress?: (p: number, msg: string) => void): Promise<Rendered> {
   const p = s.profile, r = rngFor(s.seed), barS = (4 * 60) / s.bpm, stepDur = barS / 16
   const total = Math.floor((s.bars * barS + 1.6) * SR)
   const plans = makePlan(p, s.bars, barS), tm = new Timing(s, stepDur, r)
+  progress?.(0.03, 'Loading CC0 drum kit (demo)')
+  const kit = await loadRenderKit(p, s.seed)
   const mx = p.mix
   const raw: Record<string, Stem> = {}
   const order: [string, () => Stem][] = [
-    ['drums', () => renderDrums(s, plans, total, r, tm)],
-    ['bass', () => renderBass(s, plans, total, r, tm)],
+    ['drums', () => renderDrums(s, plans, total, r, tm, kit)],
+    ['bass', () => renderBass(s, plans, total, r, tm, kit)],
     ['chords', () => renderChords(s, plans, total, r, tm)],
     ['lead', () => renderLead(s, plans, total, r, tm)],
   ]
   let i = 0
   for (const [name, fn] of order) {
-    progress?.(0.1 + 0.2 * i++, `Synthesizing ${name} (demo synth)`)
+    progress?.(0.1 + 0.2 * i++, `Rendering ${name} (demo)`)
     await tick()
     raw[name] = fn()
   }
@@ -478,33 +489,45 @@ export async function renderSpec(s: Spec, progress?: (p: number, msg: string) =>
   { const a = stereo(raw.bass.mono, 0, 0)
     biquad(a, 'highpass', 26)
     if (mx.bassSat) saturate(a, mx.bassSat, 0.5)
-    duck(a, kicks, (mx.pump ?? 0) * 0.9, 0.12)
+    duck(a, kicks, (mx.pump ?? 0) * 0.9, 15 / s.bpm)
     lvl('bass', a); softclip(a); stems.bass = a }
   // chords
   { const a = stereo(raw.chords.mono, 0.8, 0)
     const lpHz = (mx.chordsLp ?? 9000) * (0.6 + 0.8 * s.brightness)
     biquad(a, 'lowpass', lpHz)
-    biquad(a, 'highpass', 90)
+    biquad(a, 'highpass', 220)
+    biquad(a, 'peak', 420, 0.8, -2.5)
     if (mx.chordsChorus) chorus(a, 0.35, 0.5, 14, 0.1, mx.chordsChorus)
     if (mx.crush) bitcrush(a, mx.crush + 2, 0.25)
-    duck(a, kicks, mx.pump ?? 0)
     if (mx.chordsRev) reverb(a, 0.6, 0.55, 1, mx.chordsRev)
     if (mx.vinyl) { const n = V.vinyl(total, r, mx.vinyl); for (let k = 0; k < total; k++) { a.ch[0][k] += n[k]; a.ch[1][k] += n[total - 1 - k] } }
     if (mx.width) widen(a, mx.width)
+    duck(a, kicks, mx.pump ?? 0, 30 / s.bpm)
     lvl('chords', a); softclip(a); stems.chords = a }
   // lead
   { const a = stereo(raw.lead.mono, 0.3, 0.15)
-    biquad(a, 'highpass', 180)
+    biquad(a, 'highpass', 280)
+    biquad(a, 'peak', 3200, 0.8, -3.5)
+    biquad(a, 'lowpass', mx.leadLp ?? 6200)
     if (mx.leadSat) saturate(a, mx.leadSat, 0.5)
-    duck(a, kicks, (mx.pump ?? 0) * 0.7)
     if (mx.leadDelay) delayFx(a, (mx.leadDelay[0] * 60000) / s.bpm, mx.leadDelay[1], mx.leadDelay[2])
-    if (mx.leadRev) reverb(a, 0.55, 0.5, 1, mx.leadRev)
+    if (mx.leadRev) reverb(a, 0.3, 0.68, 1, mx.leadRev)
+    duck(a, kicks, (mx.pump ?? 0) * 0.8, 30 / s.bpm)
+    compress(a, -20, 2, 12, 120, 0)
     lvl('lead', a); softclip(a); stems.lead = a }
+  for (const a of Object.values(stems)) { if (peak(a) > 0.94) scale(a, 0.94 / peak(a)) }
   const mix = sum(Object.values(stems))
-  const g = 0.89 / (peak(mix) || 1)
-  for (const a of [...Object.values(stems), mix]) scale(a, g)
+  // Master the audition automatically, keep the four pre-master stems independently editable.
+  biquad(mix, 'highpass', 25)
+  compress(mix, -14, 1.6, 25, 150, 1)
+  const gain = Math.min(2, 0.23 / (rms(mix.ch[0]) || 1))
+  scale(mix, gain)
+  softclip(mix, 0.96)
+  limit(mix, -1.2, 90, 4)
+  const tp = truePeakDb(mix)
+  if (tp > -1) scale(mix, db2lin(-1 - tp))
   progress?.(0.95, 'Done (demo synth)')
-  return { mix, stems, notes: [...raw.drums.notes, ...raw.bass.notes, ...raw.chords.notes, ...raw.lead.notes], spec: s }
+  return { mix, stems, notes: [...raw.drums.notes, ...raw.bass.notes, ...raw.chords.notes, ...raw.lead.notes], spec: s, samples: Object.fromEntries([...kit].map(([voice, sample]) => [voice, sample.sound.id])) }
 }
 
 /** Standard MIDI file (format 1, one track per stem). */

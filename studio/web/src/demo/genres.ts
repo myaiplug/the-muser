@@ -19,7 +19,7 @@ export type LeadSpec = { voice: ChordVoice; rhythms: string[]; base: number; len
 export type BassSpec = { kind: BassKind; pat: string[]; lo: number; glide?: number; lfo?: number; drive?: number; decay?: number; hold?: number; walk?: boolean }
 export type MixSpec = {
   gains: { drums: number; bass: number; chords: number; lead: number }
-  pump?: number; drumsLp?: number; drumsSat?: number; chordsLp?: number; chordsRev?: number; leadRev?: number
+  leadLp?: number; pump?: number; drumsLp?: number; drumsSat?: number; chordsLp?: number; chordsRev?: number; leadRev?: number
   leadDelay?: [number, number, number]; vinyl?: number; crush?: number; width?: number; chordsChorus?: number; bassSat?: number; leadSat?: number
 }
 export type Profile = {
@@ -73,8 +73,8 @@ export const PROFILES: Profile[] = [
     },
     bass: { kind: 'sub', pat: P('x.....x...x.....', 'x.....x....5..o.', 'x.......x.x.....'), lo: 33, hold: 5 },
     chords: [{ voice: 'rhodes', pat: P('x.......x..x....', 'x.....x.....x...', 'x.......x.......'), style: 'block', center: 62, ext: 5, strumMs: 22, hold: 7 }],
-    lead: { voice: 'rhodes', rhythms: P('x...x.x.....x...', '..x.....x.x.....', 'x.....x...x.....'), base: 76, len: 3, prob: 0.8, gain: 0.55, pent: true },
-    mix: { gains: { drums: 0.9, bass: 0.9, chords: 0.8, lead: 0.5 }, drumsLp: 6800, drumsSat: 5, chordsLp: 3400, chordsRev: 0.22, leadRev: 0.3, vinyl: 0.012, chordsChorus: 0.25, leadDelay: [0.375, 0.35, 0.22] },
+    lead: { voice: 'rhodes', rhythms: P('x.......x.......', '..x.......x.....'), base: 72, len: 5, gain: 0.65 },
+    mix: { gains: { drums: 1, bass: 1, chords: 0.65, lead: 0.65 }, pump: 0.14, drumsLp: 7400, drumsSat: 3, chordsLp: 3200, chordsRev: 0.16, leadLp: 4200, leadRev: 0.2, vinyl: 0.004, chordsChorus: 0.2, leadDelay: [0.75, 0.24, 0.18] },
   },
   {
     id: 'hip-hop', name: 'Hip Hop', aliases: ['hip hop', 'hip-hop', 'hiphop', 'boom bap', 'boombap', 'rap beat'],
@@ -89,8 +89,8 @@ export const PROFILES: Profile[] = [
     },
     bass: { kind: 'electric', pat: P('x.....x..x......', 'x.....x..5..o...', 'x..x..x...x.....'), lo: 31, hold: 5, drive: 1.4 },
     chords: [{ voice: 'piano', pat: P('x.....x...x.x...', 'x.......x..x....', 'x..x....x.......'), style: 'block', center: 60, ext: 4, strumMs: 12, hold: 4 }],
-    lead: { voice: 'bell', rhythms: P('x...x...x.x.....', '..x...x.....x...', 'x.....x...x...x.'), base: 72, len: 2, prob: 0.65, gain: 0.4, pent: true },
-    mix: { gains: { drums: 1, bass: 0.85, chords: 0.7, lead: 0.4 }, drumsSat: 4, chordsLp: 4500, chordsRev: 0.12, vinyl: 0.006, leadRev: 0.2 },
+    lead: { voice: 'rhodes', rhythms: P('x.....x...x.....', 'x.......x..x....'), base: 70, len: 4, gain: 0.65 },
+    mix: { gains: { drums: 1.05, bass: 1, chords: 0.6, lead: 0.7 }, pump: 0.2, drumsSat: 3, chordsLp: 4000, chordsRev: 0.12, leadLp: 5000, leadRev: 0.16, leadDelay: [0.75, 0.25, 0.18], bassSat: 2 },
   },
   {
     id: 'trap', name: 'Trap', aliases: ['trap', 'atlanta', '808 trap'],
@@ -106,8 +106,8 @@ export const PROFILES: Profile[] = [
     },
     bass: { kind: 'sub808', pat: P('x.......x..x.x..', 'x....x..x.......', 'x..x....5..x....'), lo: 28, glide: 0.07, hold: 8, drive: 2.2 },
     chords: [{ voice: 'pad', pat: P('x...............'), style: 'block', center: 60, ext: 4, hold: 16, gain: 0.55 }],
-    lead: { voice: 'bell', rhythms: P('x...x...x.x.....', '..x...x...x...x.', 'x.x...x.........'), base: 79, len: 3, prob: 0.9, gain: 0.45, pent: true },
-    mix: { gains: { drums: 0.95, bass: 1, chords: 0.45, lead: 0.5 }, drumsSat: 3, chordsLp: 2600, chordsRev: 0.3, leadRev: 0.35, leadDelay: [0.75, 0.3, 0.2], bassSat: 3 },
+    lead: { voice: 'piano', rhythms: P('x.......x.......', 'x.........x.....', '..x.......x..x..'), base: 72, len: 6, gain: 0.65 },
+    mix: { gains: { drums: 1.1, bass: 1.15, chords: 0.4, lead: 0.75 }, pump: 0.3, drumsSat: 3, chordsLp: 2400, chordsRev: 0.16, leadLp: 4800, leadRev: 0.18, leadDelay: [0.75, 0.28, 0.24], bassSat: 3 },
   },
   {
     id: 'uk-drill', name: 'UK Drill', aliases: ['uk drill', 'drill', 'ny drill', 'chicago drill'],
@@ -122,8 +122,8 @@ export const PROFILES: Profile[] = [
     },
     bass: { kind: 'sub808', pat: P('x.....x....x....', 'x..x.......x.x..', 'x.....x..5......'), lo: 28, glide: 0.11, hold: 10, drive: 2.4 },
     chords: [{ voice: 'strings', pat: P('x...............'), style: 'block', center: 60, ext: 3, hold: 16, gain: 0.4 }],
-    lead: { voice: 'piano', rhythms: P('x..x..x...x..x..', '..x..x..x.......', 'x.....x...x.x...'), base: 72, len: 2, prob: 0.9, gain: 0.55, pent: true },
-    mix: { gains: { drums: 0.95, bass: 1, chords: 0.4, lead: 0.6 }, drumsSat: 3, chordsLp: 2400, chordsRev: 0.28, leadRev: 0.25, bassSat: 3 },
+    lead: { voice: 'pluck', rhythms: P('x.........x.....', '..x.......x.....'), base: 70, len: 6, gain: 0.6 },
+    mix: { gains: { drums: 1.1, bass: 1.15, chords: 0.35, lead: 0.7 }, pump: 0.32, drumsSat: 3, chordsLp: 2400, chordsRev: 0.18, leadLp: 4400, leadRev: 0.2, leadDelay: [0.75, 0.3, 0.23], bassSat: 3 },
   },
   {
     id: 'phonk', name: 'Phonk', aliases: ['phonk', 'memphis', 'drift phonk', 'memphis trap'],
@@ -138,8 +138,8 @@ export const PROFILES: Profile[] = [
     },
     bass: { kind: 'sub808', pat: P('x.......x.x.....', 'x..x....x.......'), lo: 27, glide: 0.06, hold: 8, drive: 3.4 },
     chords: [{ voice: 'choir', pat: P('x.......x.......', 'x.......x..x....'), style: 'block', center: 62, ext: 3, hold: 5, gain: 0.5 }],
-    lead: { voice: 'bell', rhythms: P('x..x..x.x..x....', 'x.x...x.x.x.....'), base: 74, len: 2, prob: 1, gain: 0.5, pent: true },
-    mix: { gains: { drums: 0.95, bass: 1, chords: 0.5, lead: 0.55 }, drumsSat: 6, chordsLp: 3000, chordsRev: 0.3, leadRev: 0.28, crush: 9, bassSat: 5 },
+    lead: { voice: 'piano', rhythms: P('x.....x...x.....', 'x.......x.......'), base: 69, len: 4, gain: 0.7 },
+    mix: { gains: { drums: 1.05, bass: 1.1, chords: 0.4, lead: 0.72 }, pump: 0.28, drumsSat: 5, chordsLp: 2800, chordsRev: 0.18, leadLp: 3800, leadRev: 0.18, leadDelay: [0.5, 0.22, 0.18], leadSat: 3, crush: 11, bassSat: 4 },
   },
   {
     id: 'techno', name: 'Techno', aliases: ['techno', 'warehouse', 'minimal techno', 'industrial'],
@@ -155,8 +155,8 @@ export const PROFILES: Profile[] = [
     },
     bass: { kind: 'saw', pat: P('.xxx.xxx.xxx.xxx', '.xx..xxx.xx.xxx.'), lo: 33, hold: 1, decay: 12 },
     chords: [{ voice: 'stab', pat: P('x..x..x...x.x...', 'x..x....x..x..x.', 'x.x...x...x.....'), style: 'block', center: 60, ext: 3, hold: 1, gain: 0.7 }],
-    lead: { voice: 'pluck', rhythms: P('xxxxxxxxxxxxxxxx', 'x.xx.xx.x.xx.xx.'), base: 69, len: 1, prob: 1, gain: 0.35, pent: true },
-    mix: { gains: { drums: 1, bass: 0.8, chords: 0.5, lead: 0.3 }, pump: 0.45, chordsRev: 0.25, leadRev: 0.2, leadDelay: [0.75, 0.45, 0.3], drumsSat: 4 },
+    lead: { voice: 'stab', rhythms: P('..x.......x.....', '...x......x..x..'), base: 67, len: 2, gain: 0.55 },
+    mix: { gains: { drums: 1.1, bass: 1, chords: 0.5, lead: 0.6 }, pump: 0.55, chordsLp: 4000, chordsRev: 0.15, leadLp: 4200, leadRev: 0.16, leadDelay: [0.75, 0.38, 0.26], drumsSat: 4 },
   },
   {
     id: 'house', name: 'House', aliases: ['house', 'deep house', 'tech house', 'club house'],
@@ -174,8 +174,8 @@ export const PROFILES: Profile[] = [
     bass: { kind: 'pluck', pat: P('..x...x...x...x.', '..x..x....x..x..'), lo: 33, hold: 2, decay: 6 },
     chords: [{ voice: 'rhodes', pat: P('x..x..x.x..x..x.', 'x..x....x..x..x.', 'x..x..x...x.x...'), style: 'block', center: 62, ext: 5, strumMs: 10, hold: 2, gain: 0.8 },
       { voice: 'pad', pat: P('x...............'), style: 'block', center: 60, ext: 3, hold: 16, gain: 0.3 }],
-    lead: { voice: 'pluck', rhythms: P('..x...x...x...x.', 'x.x...x.x.......'), base: 76, len: 2, prob: 0.9, gain: 0.4, pent: true },
-    mix: { gains: { drums: 0.95, bass: 0.9, chords: 0.7, lead: 0.4 }, pump: 0.5, chordsRev: 0.2, leadRev: 0.25, leadDelay: [0.75, 0.4, 0.25], drumsSat: 3 },
+    lead: { voice: 'pluck', rhythms: P('..x...x...x.....', '..x....x..x...x.'), base: 72, len: 2.5, gain: 0.65 },
+    mix: { gains: { drums: 1.1, bass: 1.05, chords: 0.6, lead: 0.72 }, pump: 0.58, chordsLp: 5800, chordsRev: 0.16, leadLp: 6000, leadRev: 0.18, leadDelay: [0.75, 0.32, 0.24], drumsSat: 3, bassSat: 2 },
   },
   {
     id: 'edm-anthem', name: 'EDM Anthem', aliases: ['edm', 'anthem', 'festival', 'big room', 'trance', 'progressive house'],
@@ -192,8 +192,8 @@ export const PROFILES: Profile[] = [
     bass: { kind: 'saw', pat: P('.xxx.xxx.xxx.xxx', '.x.x.x.x.x.x.x.x'), lo: 33, hold: 1, decay: 9 },
     chords: [{ voice: 'supersaw', pat: P('x.......x.......', 'x...............'), style: 'block', center: 64, ext: 3, hold: 8, gain: 0.8 },
       { voice: 'pluck', pat: P('x.x.x.x.x.x.x.x.'), style: 'arp', center: 70, ext: 3, hold: 1, gain: 0.35 }],
-    lead: { voice: 'supersaw', rhythms: P('x..x..x.x.......', 'x.x.x...x..x....', 'x..x..x.x..x.x..'), base: 76, len: 2, prob: 1, gain: 0.7, pent: false },
-    mix: { gains: { drums: 0.95, bass: 0.85, chords: 0.75, lead: 0.7 }, pump: 0.7, chordsRev: 0.28, leadRev: 0.3, leadDelay: [0.75, 0.35, 0.22], width: 1.3, drumsSat: 3 },
+    lead: { voice: 'supersaw', rhythms: P('x..x..x...x.....', '..x...x...x...x.'), base: 72, len: 2.5, gain: 0.7 },
+    mix: { gains: { drums: 1.1, bass: 1, chords: 0.6, lead: 0.78 }, pump: 0.7, chordsLp: 6500, chordsRev: 0.2, leadLp: 6500, leadRev: 0.18, leadDelay: [0.75, 0.3, 0.22], width: 1.2, drumsSat: 3 },
   },
   {
     id: 'synthwave', name: 'Synthwave', aliases: ['synthwave', 'retrowave', 'outrun', '80s', 'neon', 'darksynth'],
