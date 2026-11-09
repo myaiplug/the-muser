@@ -28,7 +28,7 @@ Compression=lzma2/normal
 SolidCompression=yes
 WizardStyle=modern
 LicenseFile=..\..\LICENSE
-DiskSpaceMBRequired=1500
+; Extra disk for Python, Git, ffmpeg, venv and models after install.
 ExtraDiskSpaceRequired=3221225472
 
 [Tasks]
