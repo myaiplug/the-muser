@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-export type SkinId = 'cathode' | 'terrain' | 'score' | 'horology' | 'metro' | 'vend'
+export type SkinId = 'cathode' | 'terrain' | 'score' | 'horology' | 'metro' | 'vend' | 'liminal' | 'spectra' | 'orbit'
 export interface SkinDef {
   id: SkinId
   name: string
@@ -17,6 +17,9 @@ export const SKINS: SkinDef[] = [
   { id: 'horology', name: 'Horology', tag: 'Escapement', blurb: 'Wind a musical movement. Concentric complications in enamel, blued steel and gold.', load: () => import('./horology') },
   { id: 'metro', name: 'Metro', tag: 'Diagram', blurb: 'Find your next stop. A living transit map of sounds, stations and parallel lines.', load: () => import('./metro') },
   { id: 'vend', name: 'Vend', tag: 'Kiosk', blurb: 'Select a sonic refreshment. Glowing product windows and a freshly dispensed beat.', load: () => import('./vend') },
+  { id: 'liminal', name: 'Liminal', tag: 'Anti-Gravity', blurb: 'Floating panels in a soft void. Chromatic edges, slow drift, empty space that holds the sound.', load: () => import('./liminal') },
+  { id: 'spectra', name: 'Spectra', tag: 'Chromatic Nihilism', blurb: 'Prismatic light splits across every edge. Glitch, spectral bloom, high-contrast neon on absolute black.', load: () => import('./spectra') },
+  { id: 'orbit', name: 'Orbit', tag: 'Radial', blurb: 'Concentric rings and orbital paths. Everything floats, rotates, and trails light.', load: () => import('./orbit') },
 ]
 export const DEFAULT_SKIN: SkinId = 'cathode'
 export const skinDef = (id: SkinId) => SKINS.find((s) => s.id === id) ?? SKINS[0]
