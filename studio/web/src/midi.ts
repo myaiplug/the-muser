@@ -9,11 +9,22 @@
  * - Web MIDI exists in Chrome, Edge and Opera on desktop and Android. Safari on iPhone and iPad has
  *   no Web MIDI at all, so phones use touch.
  */
-export type MidiRouting = 'auto' | 'pads' | 'keys'
+export type MidiRouting = 'auto' | 'pads' | 'keys' | 'mpk'
 export type MidiStatus = 'unsupported' | 'idle' | 'pending' | 'ready' | 'denied'
 
-/** Default layout. Auto: channel 10 drums or notes 36-51 while the pads are showing go to pads. */
-export function routeNote(note: number, channel: number, routing: MidiRouting, view: 'pads' | 'keys' | 'other'): { kind: 'pad'; index: number } | { kind: 'key'; note: number } {
+/** MPK banks A/B share eight destinations. Alternate banks can set their first note explicitly. */
+export const isMpkInput = (name: string) => /mpk/i.test(name)
+export function mpkPadIndex(note: number, firstNote = 36): number | null {
+  return note >= firstNote && note < firstNote + 16 ? (note - firstNote) % 8 : null
+}
+export function knobIndex(cc: number): number | null {
+  return cc >= 70 && cc <= 77 ? cc - 70 : cc >= 1 && cc <= 8 ? cc - 1 : null
+}
+export function routeNote(note: number, channel: number, routing: MidiRouting, view: 'pads' | 'keys' | 'other', inputName = '', firstNote = 36, padChannel = 9): { kind: 'pad'; index: number } | { kind: 'key'; note: number } {
+  if (routing === 'mpk' || (routing === 'auto' && isMpkInput(inputName))) {
+    const index = padChannel === -1 || channel === padChannel ? mpkPadIndex(note, firstNote) : null
+    return index !== null ? { kind: 'pad', index } : { kind: 'key', note }
+  }
   const padRange = note >= 36 && note <= 51
   const toPads = routing === 'pads' ? padRange : routing === 'keys' ? false : padRange && (channel === 9 || view !== 'keys')
   return toPads ? { kind: 'pad', index: note - 36 } : { kind: 'key', note }
@@ -23,6 +34,7 @@ export type MidiTarget =
   | { kind: 'pad'; index: number }
   | { kind: 'key'; note: number }
   | { kind: 'knob'; id: string }
+  | { kind: 'octave'; direction: -1 | 1 }
 
 export type MidiMapping = {
   type: 'note' | 'cc'
@@ -43,6 +55,35 @@ class MidiLearn {
   routing: MidiRouting = (localStorage.getItem('nodaw-midi-routing') as MidiRouting) || 'auto'
   inputs: string[] = []
   lastNote = ''
+  lastCC = ''
+  revision = 0
+  padBase = Number(localStorage.getItem('nodaw-midi-pad-base') ?? 36)
+  padChannel = Number(localStorage.getItem('nodaw-midi-pad-channel') ?? 9)
+  knobs = new Map<string, string>()
+  defaultKnobs: string[] = []
+
+  registerKnob(id: string, label: string) {
+    this.knobs.set(id, label); this.emit()
+    return () => { this.knobs.delete(id); this.emit() }
+  }
+  setDefaultKnobs(ids: string[]) {
+    if (ids.join('|') === this.defaultKnobs.join('|')) return
+    this.defaultKnobs = ids; this.emit()
+  }
+  setPadChannel(channel: number) {
+    this.padChannel = channel
+    try { localStorage.setItem('nodaw-midi-pad-channel', String(channel)) } catch { /* ignore */ }
+    this.emit()
+  }
+  setPadBase(note: number) {
+    this.padBase = Number.isFinite(note) ? Math.max(0, Math.min(112, Math.round(note))) : 36
+    try { localStorage.setItem('nodaw-midi-pad-base', String(this.padBase)) } catch { /* ignore */ }
+    this.emit()
+  }
+  clearTarget(target: MidiTarget) {
+    this.mappings = this.mappings.filter((m) => JSON.stringify(m.target) !== JSON.stringify(target))
+    this.save(); this.emit()
+  }
 
   constructor() {
     this.load()
@@ -71,7 +112,7 @@ class MidiLearn {
       const bind = () => {
         this.inputs = []
         this.access?.inputs.forEach((input) => {
-          input.onmidimessage = (e) => this.handleMessage(e)
+          input.onmidimessage = (e) => this.handleMessage(e, input.name || '')
           this.inputs.push(input.name || 'MIDI input')
         })
         this.emit()
@@ -86,7 +127,7 @@ class MidiLearn {
     return this.status
   }
 
-  private handleMessage(e: MIDIMessageEvent) {
+  private handleMessage(e: MIDIMessageEvent, inputName = '') {
     if (!e.data || e.data.length < 2) return
     const [status, data1, data2 = 0] = e.data
     const type = status & 0xf0
@@ -95,7 +136,11 @@ class MidiLearn {
     const isCC = type === 0xb0
     if (!isNote && !isCC) return
 
-    if (this.learning) {
+    if (isCC) this.lastCC = `ch ${channel + 1} CC ${data1}: ${data2}`
+    else if (type === 0x90 && data2 > 0) this.lastNote = `ch ${channel + 1} note ${data1}`
+    this.emit()
+
+    if (this.learning && (!isNote || (type === 0x90 && data2 > 0))) {
       const mapping: MidiMapping = {
         type: isNote ? 'note' : 'cc',
         channel,
@@ -105,11 +150,13 @@ class MidiLearn {
       this.mappings = this.mappings.filter(
         (m) => !(m.type === mapping.type && m.channel === mapping.channel && m.number === mapping.number)
       )
+      this.mappings = this.mappings.filter((m) => JSON.stringify(m.target) !== JSON.stringify(mapping.target))
       this.mappings.push(mapping)
       this.save()
-      this.emit()
-      this.onLearn?.(this.learning, mapping)
+      const target = this.learning
       this.learning = null
+      this.onLearn?.(target, mapping)
+      this.emit()
       return
     }
 
@@ -124,8 +171,13 @@ class MidiLearn {
     }
     if (!mapped && isNote) {
       // default layout, no learn step needed; the Deck routes it (see routeNote)
-      if (value > 0) { this.lastNote = `ch ${channel + 1} note ${data1}`; this.emit() }
-      window.dispatchEvent(new CustomEvent('midi-note', { detail: { note: data1, value, channel } }))
+      window.dispatchEvent(new CustomEvent('midi-note', { detail: { note: data1, value, channel, inputName } }))
+    }
+    if (!mapped && isCC) {
+      const index = knobIndex(data1)
+      const id = index === null ? undefined : this.defaultKnobs[index]
+      // A learned destination is reserved for its custom source, too.
+      if (id && !this.mappings.some((m) => m.target.kind === 'knob' && m.target.id === id)) this.dispatch({ kind: 'knob', id }, value)
     }
   }
 
@@ -142,11 +194,13 @@ class MidiLearn {
   startLearn(target: MidiTarget, onDone?: (target: MidiTarget, mapping: MidiMapping) => void) {
     this.learning = target
     this.onLearn = onDone || null
+    this.emit()
   }
 
   cancelLearn() {
     this.learning = null
     this.onLearn = null
+    this.emit()
   }
 
   getMappings() {
@@ -165,6 +219,7 @@ class MidiLearn {
   }
 
   private emit() {
+    this.revision++
     this.listeners.forEach((fn) => fn(this.mappings))
   }
 

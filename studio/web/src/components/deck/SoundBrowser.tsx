@@ -4,10 +4,11 @@ import { PADS } from '../../audio/instruments'
 import { keySampler } from '../../audio/keys'
 import {
   assignLibrarySound, assignUserSound, deleteUserSound, filterSounds, importUserSound, LIB_BASE, LIB_TYPES,
-  librarySoundBuffer, listUserSounds, loadCatalog, soundUrl, userSoundBuffer, type LibSound, type UserSound,
+  librarySoundBuffer, listUserSounds, loadCatalog, MAX_USER_SOUNDS, soundUrl, userSoundBuffer, type LibSound, type UserSound,
 } from '../../audio/library'
 import { padBank } from '../../audio/samples'
-import { ACCEPT } from '../../audio/upload'
+import { ACCEPT, extFamily } from '../../audio/upload'
+import * as soundfont from '../../audio/soundfont'
 
 type Props = {
   pad: number
@@ -34,6 +35,11 @@ export function SoundBrowser({ pad, setPad, onAssigned, onKeys }: Props) {
   const [upBusy, setUpBusy] = useState(false)
   const el = useRef<HTMLAudioElement | null>(null)
   const file = useRef<HTMLInputElement>(null)
+  const folder = useRef<HTMLInputElement>(null)
+  const [progress, setProgress] = useState('')
+  const [only808, setOnly808] = useState(false)
+  const [myQuery, setMyQuery] = useState('')
+  const visibleMine = mine.filter((u) => (!only808 || /808/i.test(u.name)) && u.name.toLowerCase().includes(myQuery.toLowerCase())).sort((a, b) => Number(/808/i.test(b.name)) - Number(/808/i.test(a.name)))
 
   useEffect(() => { loadCatalog().then(setAll).catch(() => setErr('The sound library could not load. Check your connection and reopen this tab.')) }, [])
   useEffect(() => { void listUserSounds().then(setMine) }, [])
@@ -78,18 +84,31 @@ export function SoundBrowser({ pad, setPad, onAssigned, onKeys }: Props) {
   }
   const toKeys = async (s: LibSound) => {
     audio.unlock()
-    keySampler.library = await librarySoundBuffer(s)
+    const buffer = await librarySoundBuffer(s)
+    if (soundfont.hasFont()) soundfont.unloadFont()
+    keySampler.library = buffer
     keySampler.libraryName = s.title
     onKeys()
   }
-  const upload = async (f: File | undefined) => {
-    if (!f) return
-    setUpErr(''); setUpBusy(true)
+  const upload = async (files: File[]) => {
+    audio.unlock()
+    const candidates = files.filter((f) => extFamily(f.name) !== null)
+      .sort((a, b) => Number(/808/i.test(b.name)) - Number(/808/i.test(a.name)))
+    if (!candidates.length) { setUpErr('No supported audio files selected. Use Load soundfont for .sf2.'); return }
+    setUpErr(''); setUpBusy(true); setSrc('mine')
+    let imported = 0, failed = 0
+    const errors: string[] = []
+    const count = Math.max(0, Math.min(candidates.length, MAX_USER_SOUNDS - mine.length))
     try {
-      const { sound } = await importUserSound(f)
-      setMine((m) => [sound, ...m.filter((x) => x.id !== sound.id)])
-      setSrc('mine')
-    } catch (e) { setUpErr((e as Error).message) } finally { setUpBusy(false) }
+      for (const f of candidates.slice(0, count)) {
+        setProgress(`Importing ${imported + failed + 1}/${count}: ${f.name}`)
+        try { await importUserSound(f); imported++ }
+        catch (e) { failed++; if (errors.length < 3) errors.push(`${f.name}: ${(e as Error).message}`) }
+      }
+      setMine(await listUserSounds())
+      setProgress(`Imported ${imported}; failed ${failed}; skipped ${files.length - count}. Files stay in this browser.`)
+      if (errors.length) setUpErr(errors.join(' · '))
+    } finally { setUpBusy(false) }
   }
 
   return (
@@ -107,6 +126,15 @@ export function SoundBrowser({ pad, setPad, onAssigned, onKeys }: Props) {
         </label>
       </div>
 
+      <div className="nd-upload">
+        <button className="nd-btn pri" onClick={() => file.current?.click()} disabled={upBusy} data-testid="mine-upload-btn">Import files</button>
+        <button className="nd-btn" onClick={() => folder.current?.click()} disabled={upBusy}>Import folder</button>
+        <input ref={file} type="file" accept={ACCEPT} multiple hidden data-testid="mine-upload" onChange={(e) => { void upload(Array.from(e.target.files ?? [])); e.target.value = '' }} />
+        <input ref={folder} type="file" multiple hidden {...{ webkitdirectory: '', directory: '' }} onChange={(e) => { void upload(Array.from(e.target.files ?? [])); e.target.value = '' }} />
+        <p className="nd-muted">Choose F:\sound kits or G:\sounds\Ganked_Dank_Sounds on your PC. Folder import works in supporting browsers; otherwise select multiple files. Audio is validated locally, never uploaded. Up to 512 sounds / 256 MB decoded audio; 30 seconds per sound. 808 names appear first.</p>
+      </div>
+      {progress && <p role="status">{progress}</p>}
+      {upErr && <p className="nd-err" role="alert" data-testid="upload-error">{upErr}</p>}
       {src === 'library' ? (
         <>
           <div className="nd-chips" role="group" aria-label="Type">
@@ -139,22 +167,25 @@ export function SoundBrowser({ pad, setPad, onAssigned, onKeys }: Props) {
         </>
       ) : (
         <>
-          <div className="nd-upload">
-            <button className="nd-btn pri" onClick={() => file.current?.click()} disabled={upBusy} data-testid="mine-upload-btn">{upBusy ? 'Checking file' : 'Upload a sound'}</button>
-            <input ref={file} type="file" accept={ACCEPT} hidden data-testid="mine-upload" onChange={(e) => { void upload(e.target.files?.[0]); e.target.value = '' }} />
-            <span className="nd-muted">WAV, MP3, FLAC, OGG, AIFF, M4A or WebM, up to 40 MB. Files are checked and decoded in this browser and never leave it.</span>
+          <div className="nd-br-filters">
+            <input type="search" aria-label="Search my sounds" placeholder="Search your kits…" value={myQuery} onChange={(e) => setMyQuery(e.target.value)} />
+            <label><input type="checkbox" checked={only808} onChange={(e) => setOnly808(e.target.checked)} />808 names only</label>
           </div>
-          {upErr && <p className="nd-err" role="alert" data-testid="upload-error">{upErr}</p>}
           <ul className="nd-list">
-            {mine.map((u) => (
+            {visibleMine.map((u) => (
               <li key={u.id} className="nd-row">
                 <button className="nd-icon play" aria-label={`Preview ${u.name}`} onClick={() => previewUser(u)}>▶</button>
                 <span className="nd-row-t"><b>{u.name}</b><i>{u.duration.toFixed(2)}s · your upload</i></span>
                 <button className="nd-icon" aria-label={`Delete ${u.name}`} onClick={() => { void deleteUserSound(u.id); setMine((m) => m.filter((x) => x.id !== u.id)) }}>✕</button>
+                <button className="nd-btn small" aria-label={`Play ${u.name} on keys`} onClick={() => {
+                  audio.unlock()
+                  if (soundfont.hasFont()) soundfont.unloadFont()
+                  keySampler.library = userSoundBuffer(u); keySampler.libraryName = u.name; onKeys()
+                }}>Keys</button>
                 <button className="nd-btn small pri" onClick={() => { audio.unlock(); assignUserSound(pad, u); onAssigned(pad) }} data-testid="mine-load">Pad {pad + 1}</button>
               </li>
             ))}
-            {!mine.length && <li className="nd-muted">Nothing uploaded yet.</li>}
+            {!visibleMine.length && <li className="nd-muted">{mine.length ? 'No sounds match your filters.' : 'Nothing imported yet.'}</li>}
           </ul>
         </>
       )}

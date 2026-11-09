@@ -11,6 +11,7 @@ import { midi, routeNote, type MidiRouting } from '../midi'
 import type { History } from '../state/history'
 import type { KeyNote, Project, SynthParams } from '../types'
 import { Knob } from './Knob'
+import { MidiProgrammer } from './MidiProgrammer'
 import { Arranger } from './Arranger'
 import { claimDeck, ownsInput } from './deck/focus'
 import { FxRack } from './deck/FxRack'
@@ -51,8 +52,7 @@ function useNarrow(px = 600) {
 export function Deck({ history }: Props) {
   const [view, setView] = useState<View>('pads')
   useSyncExternalStore(padBank.subscribe, padBank.version)
-  const midiRev = useSyncExternalStore((fn) => midi.subscribe(fn), () => `${midi.status}|${midi.inputs.join(',')}|${midi.routing}|${midi.lastNote}`)
-  void midiRev
+  const midiRev = useSyncExternalStore((fn) => midi.subscribe(fn), () => midi.revision)
   const narrow = useNarrow()
   const padName = (i: number) => padBank.get(i)?.name ?? PADS[i].name
   const [hitPads, setHitPads] = useState<Set<number>>(new Set())
@@ -76,7 +76,17 @@ export function Deck({ history }: Props) {
   useEffect(() => () => owner.current?.release(), [])
   const mine = () => ownsInput(owner.current!.id)
 
-  const base = 48 + proj.synth.octave * 12 // C3 at octave 0
+  const [midiBase, setMidiBase] = useState<number | null>(null)
+  const base = midiBase ?? 48 + proj.synth.octave * 12 // C3 at octave 0
+  useEffect(() => { setMidiBase(null) }, [proj.synth.octave])
+  useEffect(() => {
+    const ids = [...midi.knobs.keys()]
+    const preferred = view === 'keys'
+      ? ['cutoff', 'reso', 'attack', 'release', 'detune', 'level'].map((k) => `keys-synth-${k}`)
+      : [`pad-${selPad}-level`, `pad-${selPad}-pitch`]
+    const prefix = view === 'keys' ? 'keys-' : `pad-${selPad}-`
+    midi.setDefaultKnobs([...preferred.filter((id) => midi.knobs.has(id)), ...ids.filter((id) => id.startsWith(prefix) && !preferred.includes(id))].slice(0, 8))
+  }, [view, selPad, midiRev])
   keySampler.pad = selPad
 
   const flash = (i: number) => {
@@ -121,27 +131,41 @@ export function Deck({ history }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const octavePressed = useRef(new Set<number>())
   // MIDI: learned targets, and unlearned notes through the default layout
   useEffect(() => {
     const onMidi = (e: Event) => {
       if (!mine()) return
       const { target, value } = (e as CustomEvent).detail
       if (target.kind === 'pad' && value > 0.01) hitPad(target.index, Math.max(0.2, value))
+      if (target.kind === 'octave') {
+        if (value > 0.5 && !octavePressed.current.has(target.direction)) {
+          setMidiBase((previous) => Math.max(0, Math.min(108, (previous ?? 48 + projRef.current.synth.octave * 12) + target.direction * 12)))
+        }
+        if (value > 0.5) octavePressed.current.add(target.direction)
+        else octavePressed.current.delete(target.direction)
+      }
       if (target.kind === 'key') { if (value > 0) on(target.note, value); else off(target.note) }
     }
     const onNote = (e: Event) => {
       if (!mine()) return
-      const { note, value, channel } = (e as CustomEvent).detail as { note: number; value: number; channel: number }
-      const t = routeNote(note, channel, midi.routing, live.current.view === 'keys' ? 'keys' : live.current.view === 'pads' ? 'pads' : 'other')
+      const { note, value, channel, inputName } = (e as CustomEvent).detail as { note: number; value: number; channel: number; inputName: string }
+      const t = routeNote(note, channel, midi.routing, live.current.view === 'keys' ? 'keys' : live.current.view === 'pads' ? 'pads' : 'other', inputName, midi.padBase, midi.padChannel)
       if (t.kind === 'pad') { if (value > 0) { hitPad(t.index, Math.max(0.2, value)); setSelPad(t.index) } }
-      else if (value > 0) on(t.note, value)
+      else if (value > 0) {
+        setMidiBase((previous) => {
+          const current = previous ?? 48 + projRef.current.synth.octave * 12
+          return note < current || note >= current + (narrow ? 13 : 25) ? Math.min(108, Math.floor(note / 12) * 12) : previous
+        })
+        on(t.note, value)
+      }
       else off(t.note)
     }
     window.addEventListener('midi-control', onMidi)
     window.addEventListener('midi-note', onNote)
     return () => { window.removeEventListener('midi-control', onMidi); window.removeEventListener('midi-note', onNote) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hitPad, on, off])
+  }, [hitPad, on, off, narrow])
 
   // sequencer wiring
   useEffect(() => {
@@ -264,7 +288,7 @@ export function Deck({ history }: Props) {
 
   // keys: one octave on phones, two on wider screens
   const span = narrow ? 13 : 25
-  const keys = Array.from({ length: span }, (_, i) => base + i)
+  const keys = Array.from({ length: span }, (_, i) => base + i).filter((n) => n <= 127)
   const whites = keys.filter((n) => !isBlack(n))
   const pointerNote = useRef<number | null>(null)
   const cur = presetById(proj.synth.preset)
@@ -276,9 +300,10 @@ export function Deck({ history }: Props) {
       <span className="nd-midi ready" data-testid="midi-status">
         <b>MIDI</b> {midi.inputs.length ? midi.inputs.join(', ') : 'no device plugged in'}
         <select aria-label="MIDI layout" value={midi.routing} onChange={(e) => midi.setRouting(e.target.value as MidiRouting)}>
-          <option value="auto">Auto</option><option value="pads">Pads 36-51</option><option value="keys">All to keys</option>
+          <option value="auto">Auto</option><option value="mpk">MPK Mini (8 pads)</option><option value="pads">Pads 36-51</option><option value="keys">All to keys</option>
         </select>
         {midi.lastNote && <i>{midi.lastNote}</i>}
+        {midi.lastCC && <i>{midi.lastCC}</i>}
       </span>
     )
     return <button className="nd-btn small" data-testid="midi-connect" onClick={() => void midi.connect()} disabled={midi.status === 'pending'}>{midi.status === 'denied' ? 'MIDI blocked, retry' : midi.status === 'pending' ? 'Connecting' : 'Connect MIDI'}</button>
@@ -304,6 +329,13 @@ export function Deck({ history }: Props) {
         </div>
         <div className="nd-midi-wrap">{midiChip()}</div>
       </div>
+
+      <MidiProgrammer />
+      <label className="nd-font-load nd-btn">Load soundfont (.sf2)
+        <input type="file" accept=".sf2" onChange={(e) => { if (e.target.files?.[0]) void loadFont(e.target.files[0]); e.target.value = '' }} />
+      </label>
+      {soundfont.hasFont() && <p role="status">Soundfont loaded: {soundfont.fontName()} — play the Keys.</p>}
+      {dropErr && <p className="nd-err" role="alert">{dropErr}</p>}
 
       {view === 'pads' && (
         <div className="nd-body nd-pads">
@@ -336,7 +368,6 @@ export function Deck({ history }: Props) {
               })}
             </div>
             <p className="nd-hint">{narrow ? 'Tap a pad to play it and edit it below.' : 'Keys 1-4, Q-R, A-F, Z-V play pads. Drop an audio file on a pad. Right-click a pad to MIDI learn.'}</p>
-            {dropErr && <p className="nd-err" role="alert">{dropErr}</p>}
           </div>
 
           <div className="nd-side">
@@ -432,13 +463,12 @@ export function Deck({ history }: Props) {
               <button className="nd-btn small ghost" onClick={() => sfRef.current?.click()} data-testid="load-sf2">Load .sf2</button>
               <input ref={sfRef} type="file" hidden accept=".sf2" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void loadFont(f) }} />
             </p>
-            {view === 'keys' && dropErr && <p className="nd-err" role="alert">{dropErr}</p>}
           </div>
 
           <div className="nd-oct">
-              <button className="nd-icon" aria-label="Octave down" onClick={() => setSynth('Octave down', { octave: Math.max(-2, proj.synth.octave - 1) })} data-testid="oct-down">−</button>
-              <span>Octave {proj.synth.octave >= 0 ? '+' : ''}{proj.synth.octave}</span>
-              <button className="nd-icon" aria-label="Octave up" onClick={() => setSynth('Octave up', { octave: Math.min(2, proj.synth.octave + 1) })} data-testid="oct-up">+</button>
+              <button className="nd-icon" aria-label="Octave down" onClick={() => setMidiBase(Math.max(0, base - 12))} data-testid="oct-down">−</button>
+              <span>Visible {noteName(base)}–{noteName(base + span - 1)}</span>
+              <button className="nd-icon" aria-label="Octave up" onClick={() => setMidiBase(Math.min(narrow ? 108 : 96, base + 12))} data-testid="oct-up">+</button>
             </div>
           <div
             className="nd-piano"

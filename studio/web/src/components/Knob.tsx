@@ -65,6 +65,8 @@ export function Knob({
   const fromNorm = (n: number) => clamp(logged ? min * Math.pow(max / min, Math.min(1, Math.max(0, n))) : min + Math.min(1, Math.max(0, n)) * (max - min))
   const norm = toNorm(value)
 
+  useEffect(() => midiId ? midi.registerKnob(midiId, label) : undefined, [midiId, label])
+
   // MIDI learn and control
   useEffect(() => {
     if (!midiId) return

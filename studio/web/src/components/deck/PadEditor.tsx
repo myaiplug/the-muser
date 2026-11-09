@@ -5,7 +5,7 @@ import type { FxSlot } from '../../audio/padfx'
 import { padBank } from '../../audio/samples'
 import { ACCEPT } from '../../audio/upload'
 import { FxRack } from './FxRack'
-import { Slider } from './Slider'
+import { Knob } from '../Knob'
 
 type Props = {
   pad: number
@@ -60,8 +60,8 @@ export function PadEditor({ pad, onAudition, onBrowse }: Props) {
       {err && <p className="nd-err" role="alert" data-testid="upload-error">{err}</p>}
 
       <div className="nd-ed-sound">
-        <Slider label="Level" value={st.gain} min={0} max={2} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => padBank.setSettings(pad, { gain: v })} testId="pad-level" />
-        <Slider label="Pitch" value={st.pitch} min={-24} max={24} step={1} format={(v) => `${v > 0 ? '+' : ''}${v} st`} onChange={(v) => padBank.setSettings(pad, { pitch: v })} testId="pad-pitch" />
+        <Knob midiId={`pad-${pad}-level`} label="Level" value={st.gain} min={0} max={2} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => padBank.setSettings(pad, { gain: v })} testId="pad-level" />
+        <Knob midiId={`pad-${pad}-pitch`} label="Pitch" value={st.pitch} min={-24} max={24} step={1} format={(v) => `${v > 0 ? '+' : ''}${v} st`} onChange={(v) => padBank.setSettings(pad, { pitch: v })} testId="pad-pitch" />
       </div>
 
       <FxRack

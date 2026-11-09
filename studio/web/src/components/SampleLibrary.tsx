@@ -32,7 +32,8 @@ export function SampleLibrary({ onAssign }: Props) {
   const [items, setItems] = useState<LibItem[]>([])
   const [stats, setStats] = useState({ total: 0, samples: 0, soundfonts: 0 })
   const [scanning, setScanning] = useState(false)
-  const [scanPaths, setScanPaths] = useState('C:\\Users\\Public\\Music\\Samples')
+  const [scanPaths, setScanPaths] = useState(() => { try { return localStorage.getItem('nodaw-library-scan-paths') || 'F:\\sound kits; G:\\sounds\\Ganked_Dank_Sounds' } catch { return 'F:\\sound kits; G:\\sounds\\Ganked_Dank_Sounds' } })
+  useEffect(() => { try { localStorage.setItem('nodaw-library-scan-paths', scanPaths) } catch { /* ignore */ } }, [scanPaths])
   const [selected, setSelected] = useState<LibItem | null>(null)
   const [targetPad, setTargetPad] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -61,12 +62,17 @@ export function SampleLibrary({ onAssign }: Props) {
     setScanning(true)
     setMsg('')
     try {
-      await fetch('/api/library/scan', {
+      try { localStorage.setItem('nodaw-library-scan-paths', scanPaths) } catch { /* ignore */ }
+      const response = await fetch('/api/library/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paths }),
       })
+      if (!response.ok) throw new Error('Drive scanning requires the desktop Studio server. In the browser, use Sounds → Import files/folder.')
+      await response.json()
       await refresh()
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Drive scanning requires the desktop Studio server. Use Sounds to import files in the browser.')
     } finally {
       setScanning(false)
     }
@@ -116,6 +122,7 @@ export function SampleLibrary({ onAssign }: Props) {
         <span className="muted">{stats.samples} samples · {stats.soundfonts} soundfonts</span>
       </div>
 
+      <p className="muted">Desktop server only: scan local drives. Website/demo: open Sounds and import files or a folder; Windows paths are not accessible from the website.</p>
       <div className="lib-scan">
         <input
           className="num wide"

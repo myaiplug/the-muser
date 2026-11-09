@@ -61,7 +61,8 @@ export async function assignLibrarySound(pad: number, s: LibSound) {
 // ---------------------------------------------------------------- user uploads ("My sounds")
 
 export type UserSound = { id: string; name: string; created: number; sampleRate: number; duration: number; planes: Float32Array[] }
-const MAX_USER_SOUNDS = 60
+export const MAX_USER_SOUNDS = 512
+const MAX_USER_BYTES = 256 * 1024 * 1024
 const MAX_USER_SECONDS = 30 // pad and key one-shots; longer audio belongs in the Sampler
 
 export async function listUserSounds(): Promise<UserSound[]> {
@@ -86,11 +87,14 @@ export async function importUserSound(file: File): Promise<{ sound: UserSound; v
     name: valid.name, created: Date.now(), sampleRate: b.sampleRate, duration: b.duration,
     planes: Array.from({ length: Math.min(2, b.numberOfChannels) }, (_, c) => b.getChannelData(c).slice()),
   }
+  const all = await listUserSounds()
+  const bytes = (u: UserSound) => u.planes.reduce((n, p) => n + p.byteLength, 0)
+  if (all.length >= MAX_USER_SOUNDS || all.reduce((n, u) => n + bytes(u), 0) + bytes(sound) > MAX_USER_BYTES) {
+    throw new Error('My sounds is full (512 sounds / 256 MB decoded audio). Delete some sounds before importing more.')
+  }
   try {
     await dbTx('uploads', 'readwrite', (s) => s.put(sound))
-    const all = await listUserSounds()
-    for (const old of all.slice(MAX_USER_SOUNDS)) await deleteUserSound(old.id)
-  } catch { /* private mode: keep it in memory only */ }
+  } catch { throw new Error('Could not save this sound. Browser storage is full or unavailable; free space and try again.') }
   return { sound, valid }
 }
 
