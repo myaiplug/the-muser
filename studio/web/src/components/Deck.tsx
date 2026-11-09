@@ -2,17 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { cloneSteps, ensureBeat, syncActivePattern } from '../audio/arrange'
 import { audio } from '../audio/engine'
 import { PADS, allNotesOff, noteOff, noteOn, sequencer } from '../audio/instruments'
-import { KEY_CATS, KEY_PRESETS, keySampler, presetById } from '../audio/keys'
+import { KEY_CATS, KEY_PRESETS, keySampler, presetById, setKeyFx } from '../audio/keys'
+import type { FxSlot } from '../audio/padfx'
 import { padBank } from '../audio/samples'
 import * as soundfont from '../audio/soundfont'
 import { UploadError, validateAudioFile } from '../audio/upload'
 import { midi, routeNote, type MidiRouting } from '../midi'
 import type { History } from '../state/history'
 import type { KeyNote, Project, SynthParams } from '../types'
+import { Knob } from './Knob'
 import { Arranger } from './Arranger'
 import { claimDeck, ownsInput } from './deck/focus'
+import { FxRack } from './deck/FxRack'
 import { PadEditor } from './deck/PadEditor'
-import { Slider } from './deck/Slider'
 import { SoundBrowser } from './deck/SoundBrowser'
 import './deck/deck.css'
 
@@ -201,6 +203,10 @@ export function Deck({ history }: Props) {
   }, [view, base, hitPad, on, off, history])
 
   useEffect(() => () => allNotesOff(), [])
+
+  useEffect(() => {
+    setKeyFx((proj.keyFx ?? []) as FxSlot[])
+  }, [proj.keyFx])
 
   const toggleStep = (pad: number, st: number) => {
     audio.unlock()
@@ -477,18 +483,32 @@ export function Deck({ history }: Props) {
               </div>
             ) : <p className="nd-muted">Nothing recorded yet.</p>}
           </div>
+          <FxRack
+            fx={(proj.keyFx ?? []) as FxSlot[]}
+            title="Keys FX"
+            testPrefix="key-fx"
+            midiPrefix="keys"
+            emptyHint="No effects on the keys yet. Add a filter, EQ, compressor, saturation, bitcrush, delay, reverb, width or pan. They colour every note you play or sequence."
+            onStruct={(next, label) => history.commit(label, (s) => ({ ...s, keyFx: next }))}
+            onParam={(next, phase, label) => {
+              if (phase === 'begin') history.begin(label)
+              else if (phase === 'change') history.preview((s) => ({ ...s, keyFx: next }))
+              else if (phase === 'end') history.end()
+              else history.commit(label, (s) => ({ ...s, keyFx: next }))
+            }}
+          />
           <details className="nd-synth" open={!narrow}>
             <summary>Shape the sound</summary>
             <div className="nd-seg" role="group" aria-label="Wave">
               {WAVES.map((w) => <button key={w} className={proj.synth.wave === w ? 'on' : ''} onClick={() => setSynth(`Wave ${w}`, { wave: w })}>{w.slice(0, 3).toUpperCase()}</button>)}
             </div>
-            <div className="nd-synth-sliders">
-              <Slider label="Cutoff" value={proj.synth.cutoff} min={0} max={1} format={(v) => `${Math.round(120 * Math.pow(2, v * 7.5))} Hz`} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, cutoff: v } }))} />
-              <Slider label="Reso" value={proj.synth.reso} min={0} max={1} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, reso: v } }))} />
-              <Slider label="Attack" value={proj.synth.attack} min={0.002} max={1.5} log format={(v) => `${Math.round(v * 1000)} ms`} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, attack: v } }))} />
-              <Slider label="Release" value={proj.synth.release} min={0.02} max={3} log format={(v) => `${v.toFixed(2)} s`} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, release: v } }))} />
-              <Slider label="Detune" value={proj.synth.detune} min={0} max={30} format={(v) => `${v.toFixed(0)} c`} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, detune: v } }))} />
-              <Slider label="Level" value={proj.synth.volume} min={0} max={1} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, volume: v } }))} />
+            <div className="nd-synth-knobs">
+              <Knob label="Cutoff" midiId="keys-synth-cutoff" testId="keys-cutoff" value={proj.synth.cutoff} min={0} max={1} defaultValue={0.65} size={48} format={(v) => `${Math.round(120 * Math.pow(2, v * 7.5))} Hz`} onBegin={() => history.begin('Cutoff')} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, cutoff: v } }))} onEnd={history.end} onCommit={(v) => history.commit('Cutoff', (s) => ({ ...s, synth: { ...s.synth, cutoff: v } }))} />
+              <Knob label="Reso" midiId="keys-synth-reso" testId="keys-reso" value={proj.synth.reso} min={0} max={1} defaultValue={0.15} size={48} format={(v) => `${Math.round(v * 100)}%`} onBegin={() => history.begin('Reso')} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, reso: v } }))} onEnd={history.end} onCommit={(v) => history.commit('Reso', (s) => ({ ...s, synth: { ...s.synth, reso: v } }))} />
+              <Knob label="Attack" midiId="keys-synth-attack" testId="keys-attack" value={proj.synth.attack} min={0.002} max={1.5} defaultValue={0.01} size={48} log format={(v) => `${Math.round(v * 1000)} ms`} onBegin={() => history.begin('Attack')} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, attack: v } }))} onEnd={history.end} onCommit={(v) => history.commit('Attack', (s) => ({ ...s, synth: { ...s.synth, attack: v } }))} />
+              <Knob label="Release" midiId="keys-synth-release" testId="keys-release" value={proj.synth.release} min={0.02} max={3} defaultValue={0.4} size={48} log format={(v) => `${v.toFixed(2)} s`} onBegin={() => history.begin('Release')} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, release: v } }))} onEnd={history.end} onCommit={(v) => history.commit('Release', (s) => ({ ...s, synth: { ...s.synth, release: v } }))} />
+              <Knob label="Detune" midiId="keys-synth-detune" testId="keys-detune" value={proj.synth.detune} min={0} max={30} defaultValue={8} size={48} format={(v) => `${v.toFixed(0)} c`} onBegin={() => history.begin('Detune')} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, detune: v } }))} onEnd={history.end} onCommit={(v) => history.commit('Detune', (s) => ({ ...s, synth: { ...s.synth, detune: v } }))} />
+              <Knob label="Level" midiId="keys-synth-level" testId="keys-level" value={proj.synth.volume} min={0} max={1} defaultValue={0.7} size={48} format={(v) => `${Math.round(v * 100)}%`} onBegin={() => history.begin('Level')} onChange={(v) => history.preview((s) => ({ ...s, synth: { ...s.synth, volume: v } }))} onEnd={history.end} onCommit={(v) => history.commit('Level', (s) => ({ ...s, synth: { ...s.synth, volume: v } }))} />
             </div>
           </details>
         </div>

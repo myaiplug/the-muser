@@ -24,6 +24,7 @@ export const INITIAL: Project = {
     return p
   })(),
   keyNotes: [],
+  keyFx: [],
   bpm: 92,
 }
 

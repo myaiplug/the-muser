@@ -21,6 +21,9 @@ export type KnobProps = {
   title?: string
   /** Unique id for MIDI learn mapping. Right-click the knob to learn a CC. */
   midiId?: string
+  /** Map the drag/scroll range logarithmically (frequencies, Q, times). */
+  log?: boolean
+  testId?: string
 }
 
 const ARC = 270
@@ -42,7 +45,7 @@ function arcPath(cx: number, cy: number, r: number, a0: number, a1: number) {
 
 export function Knob({
   label, value, min, max, defaultValue, step = 0, size = 56, color = 'var(--hot)', bipolar,
-  format = (v) => v.toFixed(1), onBegin, onChange, onEnd, onCommit, title, midiId,
+  format = (v) => v.toFixed(1), onBegin, onChange, onEnd, onCommit, title, midiId, log, testId,
 }: KnobProps) {
   const ref = useRef<HTMLDivElement>(null)
   const drag = useRef<{ y: number; v: number } | null>(null)
@@ -52,12 +55,15 @@ export function Knob({
   const latest = useRef({ value, onBegin, onChange, onEnd })
   latest.current = { value, onBegin, onChange, onEnd }
 
-  const norm = (value - min) / (max - min)
   const clamp = (v: number) => {
     let x = Math.min(max, Math.max(min, v))
     if (step) x = Math.round(x / step) * step
     return x
   }
+  const logged = !!(log && min > 0 && max > 0)
+  const toNorm = (v: number) => logged ? Math.log(v / min) / Math.log(max / min) : (v - min) / (max - min)
+  const fromNorm = (n: number) => clamp(logged ? min * Math.pow(max / min, Math.min(1, Math.max(0, n))) : min + Math.min(1, Math.max(0, n)) * (max - min))
+  const norm = toNorm(value)
 
   // MIDI learn and control
   useEffect(() => {
@@ -65,13 +71,12 @@ export function Knob({
     const onMidi = (e: Event) => {
       const { target, value: v } = (e as CustomEvent).detail
       if (target.kind === 'knob' && target.id === midiId) {
-        const nv = min + v * (max - min)
-        onChange(clamp(nv))
+        onChange(fromNorm(v))
       }
     }
     window.addEventListener('midi-control', onMidi)
     return () => window.removeEventListener('midi-control', onMidi)
-  }, [midiId, min, max, onChange])
+  }, [midiId, min, max, onChange, log, step])
 
   // Non-passive wheel listener so we can preventDefault page scroll.
   useEffect(() => {
@@ -83,8 +88,8 @@ export function Knob({
       if (wheelTimer.current === null) L.onBegin?.()
       else window.clearTimeout(wheelTimer.current)
       const fine = e.shiftKey ? 0.2 : 1
-      const delta = (-Math.sign(e.deltaY) * (max - min) * 0.02 * fine)
-      L.onChange(clamp(L.value + delta))
+      const delta = -Math.sign(e.deltaY) * 0.02 * fine
+      L.onChange(fromNorm(toNorm(L.value) + delta))
       setActive(true)
       wheelTimer.current = window.setTimeout(() => {
         wheelTimer.current = null
@@ -95,7 +100,7 @@ export function Knob({
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [min, max, step])
+  }, [min, max, step, log])
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return
@@ -107,8 +112,7 @@ export function Knob({
   const onPointerMove = (e: React.PointerEvent) => {
     if (!drag.current) return
     const fine = e.shiftKey ? 0.2 : 1
-    const dv = ((drag.current.y - e.clientY) / 180) * (max - min) * fine
-    onChange(clamp(drag.current.v + dv))
+    onChange(fromNorm(toNorm(drag.current.v) + ((drag.current.y - e.clientY) / 180) * fine))
   }
   const onPointerUp = () => {
     if (!drag.current) return
@@ -132,10 +136,10 @@ export function Knob({
     midi.startLearn({ kind: 'knob', id: midiId }, () => setLearning(false))
   }
   const onKey = (e: React.KeyboardEvent) => {
-    const d = (max - min) * (e.shiftKey ? 0.01 : 0.05)
+    const d = e.shiftKey ? 0.01 : 0.05
     let nv: number | null = null
-    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') nv = clamp(value + d)
-    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') nv = clamp(value - d)
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') nv = fromNorm(toNorm(value) + d)
+    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') nv = fromNorm(toNorm(value) - d)
     if (nv !== null) {
       e.preventDefault()
       if (onCommit) onCommit(nv)
@@ -176,6 +180,7 @@ export function Knob({
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={Number(value.toFixed(3))}
+        data-testid={testId}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

@@ -8,6 +8,7 @@
  */
 import type { SynthParams } from '../types'
 import { audio } from './engine'
+import { keysDestination, type FxSlot } from './padfx'
 import { padBank } from './samples'
 import * as soundfont from './soundfont'
 
@@ -99,10 +100,30 @@ export const keySampler: { pad: number; library: AudioBuffer | null; libraryName
 type Voice = { stop: (t: number, release: number) => void; env: GainNode }
 const held = new Map<number, Voice>()
 let keysOut: GainNode | null = null
-const out = () => {
+let keysOutDest: AudioNode | null = null
+let currentKeyFx: FxSlot[] = []
+
+const routeOut = () => {
   const ctx = audio.ensure()
-  if (!keysOut || keysOut.context !== ctx) { keysOut = ctx.createGain(); keysOut.connect(audio.instBus) }
+  if (!keysOut || keysOut.context !== ctx) {
+    keysOut = ctx.createGain()
+    keysOutDest = null
+  }
+  const dest = keysDestination(currentKeyFx)
+  if (keysOutDest !== dest) {
+    try { keysOut.disconnect() } catch { /* first connection */ }
+    keysOut.connect(dest)
+    keysOutDest = dest
+  }
   return keysOut
+}
+const out = () => routeOut()
+
+export const getKeyFx = () => currentKeyFx
+/** Apply the keys insert chain. Structural edits rebuild it; parameter edits ramp the live nodes. */
+export function setKeyFx(slots: FxSlot[]) {
+  currentKeyFx = slots
+  if (audio.ctx || keysOut) routeOut()
 }
 let noiseBuf: AudioBuffer | null = null
 const noise = (ctx: BaseAudioContext) => {

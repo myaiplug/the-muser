@@ -299,3 +299,42 @@ export function refreshPadChain(i: number, slots: FxSlot[]) {
   if (!audio.ctx) return
   padDestination(i, slots)
 }
+
+let keysLive: Live | null = null
+
+/** Where the keys instrument should send its voices right now. */
+export function keysDestination(slots: FxSlot[] | undefined): AudioNode {
+  const ctx = audio.ensure()
+  const on = (slots ?? []).filter((s) => s.on)
+  const cur = keysLive
+  if (!on.length) {
+    if (cur) { keysLive = null; retire(cur) }
+    return audio.instBus
+  }
+  const sig = sigOf(slots!)
+  if (cur && cur.sig === sig && cur.output.context === ctx) {
+    cur.slots.forEach(({ slot, node }) => {
+      const now = slots!.find((s) => s.id === slot.id)
+      if (now && now.p !== slot.p) { node.set(now.p, true); slot.p = now.p }
+    })
+    return cur.input
+  }
+  if (cur) retire(cur)
+  const built = buildPadChain(ctx, slots!, audio.instBus, true)
+  keysLive = { ...built, sig, slots: built.slots.map((x) => ({ slot: { ...x.slot }, node: x.node })) }
+  return keysLive.input
+}
+
+/** Push parameter changes immediately (knob drags) without waiting for the next note. */
+export function refreshKeysChain(slots: FxSlot[]) {
+  if (!audio.ctx) return
+  keysDestination(slots)
+}
+
+/** Offline / playlist destination: build a keys insert chain into `dest` when there are active slots. */
+export function keysRoute(slots: FxSlot[] | undefined, dest: AudioNode): AudioNode {
+  const on = (slots ?? []).filter((s) => s.on)
+  if (!on.length) return dest
+  return buildPadChain(dest.context, on, dest, false).input
+}
+
