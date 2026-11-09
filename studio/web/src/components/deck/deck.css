@@ -211,3 +211,15 @@ body:not(.browser-demo) .beats-fab { bottom: calc(16px + env(safe-area-inset-bot
 .nd .nd-pad.drop { outline: 2px dashed var(--hot); outline-offset: -4px; }
 .nd .nd-arrange { overflow-x: auto; }
 @media (pointer: coarse), (max-width: 820px) { .nd .nd-select { min-height: 44px; } }
+
+.nd-programmer { margin: 8px 0; padding: 10px; border: 1px solid #555; border-radius: 8px; }
+.nd-programmer summary { cursor: pointer; min-height: 44px; padding: 10px; }
+.nd-programmer p { font-size: 12px; line-height: 1.5; }
+.nd-programmer ul { list-style: none; padding: 0; max-height: 420px; overflow: auto; }
+.nd-programmer li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.nd-programmer li span { flex: 1; min-width: 130px; overflow-wrap: anywhere; }
+.nd-programmer small { display: block; opacity: .7; }
+.nd-programmer input { width: 80px; min-height: 44px; }
+.nd-programmer button { min-height: 44px; }
+.nd-font-load { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.nd-font-load input { max-width: 100%; }
