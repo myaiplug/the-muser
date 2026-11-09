@@ -18,7 +18,7 @@ export function MidiProgrammer() {
       <option value={-1}>Any (shared notes)</option>
       {Array.from({ length: 16 }, (_, n) => <option key={n} value={n}>Channel {n + 1}</option>)}
     </select></label>
-    <p>Factory pads use channel 10; keyboard notes on other channels stay keys, even after Octave down. Change this for reprogrammed pads.</p>
+    <p>Factory pads often use channel 10. On the Pads view, pad-bank notes still hit pads 1–8 on any channel. On the Keys view, only this channel is treated as pads so an octave-shifted keyboard stays keys. Choose Any if your pads share a channel with the keys.</p>
     <label>MPK first pad note <input type="number" min={0} max={112} value={midi.padBase} onChange={(e) => midi.setPadBase(+e.target.value)} /></label>
     <p>Use the first note of your alternate contiguous pad bank here. Default 36; next bank shares the same eight pads.</p>
     <p>MPK Octave buttons normally transpose the keyboard locally, not send MIDI. Other devices can learn Octave below.</p>

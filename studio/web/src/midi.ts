@@ -22,8 +22,12 @@ export function knobIndex(cc: number): number | null {
 }
 export function routeNote(note: number, channel: number, routing: MidiRouting, view: 'pads' | 'keys' | 'other', inputName = '', firstNote = 36, padChannel = 9): { kind: 'pad'; index: number } | { kind: 'key'; note: number } {
   if (routing === 'mpk' || (routing === 'auto' && isMpkInput(inputName))) {
-    const index = padChannel === -1 || channel === padChannel ? mpkPadIndex(note, firstNote) : null
-    return index !== null ? { kind: 'pad', index } : { kind: 'key', note }
+    const index = mpkPadIndex(note, firstNote)
+    // Factory pads are often channel 10, but many presets share channel 1 with the keys.
+    // On the Pads view, accept the pad-bank notes on any channel so the 8 pads always fire.
+    // On Keys view, keep the channel filter so an octave-shifted keyboard stays keys.
+    const channelOk = padChannel === -1 || channel === padChannel || view !== 'keys'
+    return index !== null && channelOk ? { kind: 'pad', index } : { kind: 'key', note }
   }
   const padRange = note >= 36 && note <= 51
   const toPads = routing === 'pads' ? padRange : routing === 'keys' ? false : padRange && (channel === 9 || view !== 'keys')

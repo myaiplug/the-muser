@@ -35,6 +35,8 @@ test('MPK banks A/B go to first eight pads in hardware order, independent of vie
   }
   assert.equal(routeNote(60, 0, 'auto', 'pads', 'MPK mini').kind, 'key')
   assert.equal(routeNote(36, 0, 'auto', 'keys', 'MPK mini').kind, 'key') // octave-transposed keyboard
+  assert.deepEqual(plain(routeNote(36, 0, 'auto', 'pads', 'MPK mini')), { kind: 'pad', index: 0 })
+  assert.deepEqual(plain(routeNote(44, 0, 'mpk', 'pads')), { kind: 'pad', index: 0 })
   assert.equal(routeNote(36, 0, 'mpk', 'keys', '', 36, -1).index, 0) // customized shared channel
   for (let note = 60; note < 76; note++) assert.equal(routeNote(note, 9, 'mpk', 'keys', '', 60).index, (note - 60) % 8)
 })
