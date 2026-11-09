@@ -1,0 +1,98 @@
+/* Spectra — chromatic nihilism, prismatic edges, absolute black */
+.spectra {
+  --sp-bg: #050508;
+  --sp-text: #f0f0ff;
+  background: var(--sp-bg);
+  color: var(--sp-text);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.sp-void {
+  position: relative;
+  min-height: 100%;
+}
+.sp-bloom {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 80, 180, 0.12), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(80, 200, 255, 0.1), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(180, 80, 255, 0.06), transparent 50%);
+  pointer-events: none;
+  filter: blur(40px);
+}
+.sp-panel {
+  position: relative;
+  background: rgba(8, 8, 14, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.sp-stage { margin: 5vh 6vw 2vh; padding: 1.5rem; }
+.sp-control { margin: 0 6vw 3vh auto; width: min(360px, 92%); padding: 1.25rem; }
+.sp-result { margin: 0 6vw 5vh; padding: 1.25rem; display: flex; gap: 1.25rem; align-items: center; }
+.sp-advanced { margin: 5vh 5vw; padding: 1.25rem; }
+.sp-scan {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #ff6bff, #6bffff, transparent);
+  animation: sp-scan 3s linear infinite;
+  opacity: 0.6;
+}
+.sp-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+.sp-tile {
+  position: relative;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid hsl(var(--hue), 80%, 55%);
+  color: inherit;
+  padding: 1rem 0.6rem;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+  text-align: left;
+}
+.sp-tile:hover,
+.sp-tile[aria-pressed="true"] {
+  box-shadow: 0 0 20px hsl(var(--hue), 90%, 60% / 0.4);
+  transform: translateY(-2px);
+}
+.sp-prism {
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, hsl(var(--hue), 100%, 60%), transparent 40%, hsl(calc(var(--hue) + 60), 100%, 60%));
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.sp-tile:hover .sp-prism { opacity: 0.35; }
+.sp-tile b { display: block; font-family: Outfit, sans-serif; font-weight: 600; font-size: 0.95rem; }
+.sp-tile small { opacity: 0.5; font-size: 0.7rem; }
+.sp-tag {
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  color: #ff6bff;
+}
+.sp-status b {
+  font-family: Outfit, sans-serif;
+  font-size: 1.5rem;
+  display: block;
+  margin: 0.25rem 0 0.5rem;
+}
+.sp-meta h2 {
+  margin: 0 0 0.3rem;
+  font-family: Outfit, sans-serif;
+  font-weight: 600;
+}
+@keyframes sp-scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-scan { animation: none; }
+}
