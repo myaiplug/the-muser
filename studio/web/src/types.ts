@@ -152,6 +152,8 @@ export type Project = {
   pads: PadParams
   pattern: boolean[][] // 16 pads x 16 steps (the pattern currently being edited)
   keyNotes: KeyNote[] // key sequence, played with the current keys preset
+  /** Insert FX for the keys instrument (same slot shape as per-pad FX). */
+  keyFx?: { id: string; type: string; on: boolean; p: Record<string, number> }[]
   bpm: number
   /** Named patterns the playlist can place. Hydrated by ensureBeat(). */
   patterns?: BeatPattern[]
