@@ -1,0 +1,86 @@
+/* Liminal — anti-gravity floating panels in a soft void */
+.liminal {
+  --lim-bg: #06060c;
+  --lim-edge: rgba(168, 240, 255, 0.35);
+  --lim-glow: rgba(168, 240, 255, 0.12);
+  background: var(--lim-bg);
+  color: #e8f4ff;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+.lim-void {
+  position: relative;
+  min-height: 100%;
+  isolation: isolate;
+}
+.lim-ambient {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 30% 20%, rgba(120, 180, 255, 0.08), transparent 50%),
+    radial-gradient(ellipse 50% 50% at 70% 80%, rgba(200, 140, 255, 0.06), transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+.lim-float {
+  position: relative;
+  z-index: 1;
+  background: rgba(10, 12, 20, 0.55);
+  border: 1px solid var(--lim-edge);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 40px var(--lim-glow);
+  animation: lim-drift 12s ease-in-out infinite alternate;
+}
+.lim-stage { margin: 6vh 8vw 2vh; padding: 2rem; }
+.lim-control { margin: 0 8vw 4vh auto; width: min(380px, 90%); padding: 1.5rem; }
+.lim-result { margin: 0 8vw 6vh; padding: 1.5rem; display: flex; gap: 1.5rem; align-items: center; }
+.lim-advanced { margin: 6vh 6vw; padding: 1.5rem; }
+.lim-label {
+  font-family: Syne, sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  opacity: 0.6;
+  margin-bottom: 1rem;
+}
+.lim-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.lim-tile {
+  position: relative;
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  padding: 1.2rem 0.8rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s;
+}
+.lim-tile:hover,
+.lim-tile[aria-pressed="true"] {
+  transform: translateY(-6px);
+  border-color: var(--lim-edge);
+}
+.lim-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px var(--lim-edge);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.lim-tile:hover .lim-edge,
+.lim-tile[aria-pressed="true"] .lim-edge { opacity: 1; }
+.lim-tile b { display: block; font-weight: 600; font-size: 1.05rem; }
+.lim-tile small { opacity: 0.55; font-size: 0.75rem; }
+.lim-status b { font-family: Syne, sans-serif; font-size: 1.4rem; display: block; margin: 0.3rem 0; }
+.lim-meta h2 { margin: 0 0 0.4rem; font-family: Syne, sans-serif; font-weight: 700; }
+@keyframes lim-drift {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lim-float { animation: none; }
+  .lim-tile { transition: none; }
+}
