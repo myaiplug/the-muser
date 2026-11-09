@@ -87,16 +87,19 @@ or clipping files, and errors tell you what to do in plain words.
 
 ## Skins
 
-The Studio ships three complete skins. Each is its own layout and visual system on top of the same session, engines and autosave, so you can switch at any moment without losing a track, a chain or a typed prompt.
+The Studio ships nine complete skins. Each is its own layout and visual system on top of the same session, engines and autosave, so you can switch at any moment without losing a track, a chain or a typed prompt.
 
 | Skin | Look | Easy mode | Advanced mode |
 |---|---|---|---|
 | **Cathode** (default) | Black glass, one lime phosphor, a live scope | Vibe cartridges, scope stage, five faders, finish and tools column | Stem strips with chains, preset shelf, deck, library, composer |
 | **Terrain** | Your sound as a WebGL landscape you can read | Spectral terrain, vibe rulers, five rulers for the macros | Lane rows with per-stem controls, sheets for deck, library, composer |
 | **Score** | Paper, ink and one red mark, with engraved notation | Stems transcribed live from the audio into staves, dynamics markings as sliders | Staves per stem, dial rack for the selected stem, docks for deck, library, composer |
-
-![Terrain skin](screenshots/skins/terrain-easy.png)
-![Score skin](screenshots/skins/score-easy.png)
+| **Horology** | Enamel, blued steel and gold complications | Concentric musical movement | Wind and complications |
+| **Metro** | Living transit map | Stations, parallel lines, next stop | Diagram layers |
+| **Vend** | Glowing product windows, 24h kiosk | Select a sonic refreshment | Service hatch |
+| **Liminal** | Floating panels in a soft void | Anti-gravity drift, chromatic edges | Deep space |
+| **Spectra** | Prismatic chromatic nihilism | Spectral bloom, glitch edges | Full spectrum |
+| **Orbit** | Concentric rings and orbital paths | Radial tile placement, light trails | Orbital mechanics |
 
 Switch skins from the **skin button in the top bar** (it shows a thumbnail of each), with **Alt+S** to cycle, or by typing "skin" in the **command palette** (Ctrl/Cmd+K). The choice is remembered in your browser. Every skin has Easy and Advanced mode, the 105-preset browser, the Engines drawer with 8 GB fit badges, undo, redo and history, and pads, sequencer and keys in the deck. Press `?` for the keyboard map.
 
@@ -267,82 +270,3 @@ Double-click **`setup_windows.bat`**, or from PowerShell:
 Setup creates `.venv`, installs the core tools (Pedalboard, pyloudnorm, noisereduce, Basic Pitch,
 Matchering), builds the web UI, checks Ollama, ffmpeg and your GPU, and ends with a **hardware check**
 that lists which AI models fit your card.
-
-### 4. (Optional) Pull an LLM for the chat composer
-
-```powershell
-ollama pull qwen3:8b
-```
-
-Quit Ollama from the system tray and start it again afterwards so it picks up
-`OLLAMA_CONTEXT_LENGTH=16384`.
-
-### 5. Launch
-
-Double-click **`start_studio.bat`**: your browser opens **http://127.0.0.1:8765**.
-
-```powershell
-.\start_studio.bat -Demo        # force demo mode (no LLM or models)
-.\start_studio.bat -Gradio      # also start the original Gradio UI at http://localhost:7860
-.\start_studio.bat -Port 9000
-```
-
-### 6. Add AI models
-
-Open **Engines**, find a model marked **Fits**, press **Install**. On an 8 GB card start with
-**ACE-Step 1.5**.
-
-### Updating
-
-```powershell
-cd $HOME\Documents\the-muser
-git pull
-.\setup_windows.bat -Gpu
-```
-
-Rerunning setup is safe: it only adds what is missing. Then start the Studio as usual.
-
----
-
-## Hardware notes
-
-* **8 GB NVIDIA (RTX 2070 / 2080 / 3060 Ti / 4060):** ACE-Step 1.5 low-memory profile and every
-  model marked Fits. Models load one at a time.
-* **12 to 16 GB:** adds DiffRhythm, SongGeneration low memory, AudioSR, ACE-Step with the 1.7B LM.
-* **24 GB (RTX 3090 / 4090):** everything at full quality, including the original full pipeline and YuE.
-* **CPU only:** every Easy mode tool works (sketch synth, split, cleanup, match, MIDI, mastering).
-* **Disk:** Python deps about 3 GB with PyTorch; each AI model is 2 to 20 GB.
-
-## How it fits together
-
-```
-studio/
-  server/
-    app.py, routes_v2.py   REST API (python -m studio.server), serves the built UI
-    engines/               registry (licenses, VRAM profiles, health), hardware check,
-                           auto-selector, installer, adapters, DSP, CLI
-    presets.py             preset library loader (studio/presets/*)
-  presets/                 105 JSON presets + Easy slider maps
-  web/                     Vite + React + TypeScript UI (Easy and Advanced modes)
-  tools/                   headless UI smoke tests (Playwright)
-setup_windows.ps1/.bat     Windows setup, extras flags, hardware check
-start_studio.ps1/.bat/.sh  launchers
-```
-
-### Development
-
-```powershell
-.\.venv\Scripts\python -m studio.server --reload     # API on :8765
-cd studio\web; npm run dev                            # hot-reload UI on :5173
-node studio\tools\ui_skins.mjs                        # click-through test of all skins (studio running with --demo)
-.\.venv\Scripts\python -m pytest tests\test_studio_engines.py tests\test_studio_v2_api.py
-```
-
-NoDAW Studio PRO front end by NoDAW Labs, built on The Muser (MIT). Skins live in `studio/web/src/skins/` (one folder each, sharing `skins/shared/`).
-
-## Credits and license
-
-The Muser (c) The Muser Contributors, MIT (upstream, unchanged), see [LICENSE](LICENSE), [NOTICE](NOTICE) and
-[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Upstream: https://github.com/noah-chelednik/the-muser.
-Studio front end by NoDAW Labs, released under the same MIT license. Each integrated tool keeps its own
-license, listed above.
